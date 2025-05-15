@@ -26,6 +26,7 @@ generate_id_file()
   fi
 }
 
+# generate docker-compose file
 generate_compose_yml()
 {
       touch ${run_path}/config-file/docker-compose.yml
@@ -58,10 +59,28 @@ services:
       network_mode: host
 EOF
 }
+
+# generate dirs 
+gen_dir(){
+    dir_paths=( 
+      data-file
+      config-file/logs
+      config-file/py-files/crts_keys
+      config-file/py-files/databases
+    )
+  for path in ${dir_paths[@]};do
+      if [ ! -d ${path} ];then
+        mkdir -p ${path}
+      fi
+  done
+}
+
+
 # 启动docker-compose
 compose_file=${run_path}'/config-file/docker-compose.yml'
 case $1 in
 start)
+  gen_dir
 	# Restart docker-compose
 	[ -f ${compose_file} ] && docker-compose -f ${compose_file} -p ${project_name} down
   	generate_id_file
