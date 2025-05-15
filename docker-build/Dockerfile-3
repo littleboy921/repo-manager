@@ -1,0 +1,8 @@
+FROM py3-apt-dnf:0.1
+LABEL maintainer="zcq<zhangchiqian@uniontech.com>"
+LABEL version="0.1"
+LABEL description="debian with python3 python3-pip rpm dnf reprepro createrepo-c netcat-openbsd git gunicorn,pip3 install requirements.txt"
+COPY wheelhouse /mnt/wheelhouse
+WORKDIR	/mnt/
+RUN pip3 install -r /mnt/wheelhouse/requirements.txt  && \
+    rm -rf /mnt/wheelhouse

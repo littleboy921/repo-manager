@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>deb仓库管理</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <link rel="stylesheet" href="bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+</head>
+
+<body>
+  <div class="layui-container" style="background-color: #D8D8D8">
+    <div class="layui-form layui-row layui-col-space10">
+      <h2>新建仓库：</h2>
+        <button type="button" class="layui-btn" lay-on="new-deb-repo">
+          <i class="layui-icon layui-icon-add-1"></i>
+        </button>
+      <h2>添加已有仓库：</h2>
+        <div class="layui-form-item">
+            <div class="layui-input-group">
+              <div class="layui-input-split layui-input-prefix" style="color:white; background-color: #16baaa">
+                仓库路径
+              </div>
+              <input type="text" placeholder="请输入仓库文件路径" class="layui-input" name="repo-path"  lay-affix="clear">
+              <div class="layui-input-suffix">
+                <button class="layui-btn" lay-submit lay-filter="add-repo-manager">确认添加</button>
+              </div>
+            </div>
+        </div>
+    </div>
+    <!-- 表格渲染 -->
+    <table class="layui-table" id="deb_repo_table" lay-filter="deb_repo_table"></table>
+  </div>
+
+
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<!-- 引入 md5 加密函数 -->
+<!-- <script src="js/spark-md5.js"></script> -->
+<!-- 文件大小格式化函数 -->
+<script>  
+  function repo_fun_module(d) {
+    fun_module_html=`
+      <div class="layui-btn-container">
+        <a id="repo-manager" type="button" class="layui-btn" href="/deb-repo-manager.html?id=${d.id}&repopath=${encodeURIComponent(d.repopath)}&abs_path=${encodeURIComponent(d.abs_path)}&codename=${d.codename}&components=${d.components}&architectures=${d.architectures}&description=${encodeURIComponent(d.description)}">
+          <i class="layui-icon layui-icon-app"></i>进入仓库管理
+        </a>
+        <button id="delete-repo-manager-${d.id}" type="button" class="layui-btn" lay-on="delete-repo-manager" data-id="${d.id}" onmouseover="show_tips('此操作并不会删除仓库文件，仅会从管理列表中移除该仓库。',this.id)" onmouseleave="close_tips()">
+          <i class="layui-icon layui-icon-delete"></i>移除仓库
+        </button>
+        <button id="refresh-repo-manager-${d.id}" type="button" class="layui-btn" lay-on="refresh-repo-manager" data-id="${d.id}" data-repopath="${encodeURIComponent(d.repopath)}" data-codename="${d.codename}">
+          <i class="layui-icon layui-icon-refresh-3"></i>刷新仓库信息
+        </button>
+      </div>
+    `;
+    return fun_module_html;
+  }
+</script>
+
+<script>
+  layui.use(function(){
+      let table = layui.table;
+      let util = layui.util;
+      let form = layui.form;
+      let tips = layui.tips;
+      let layer = layui.layer;
+      let $ = layui.$;
+
+      //按钮事件
+      util.on('lay-on', {
+        'delete-repo-manager':function(othis){
+          manage_repo('delete-repo-manager','','',id=othis.context.dataset.id);
+        },
+        'refresh-repo-manager': function(othis){
+          manage_repo('refresh-repo-manager',othis.context.dataset.repopath,othis.context.dataset.codename,othis.context.dataset.id);
+        },
+        'new-deb-repo': function(othis){
+          layer.open({
+            type: 2,
+            area: ['800px', '520px'],
+            content: '/new-deb-repo.html',
+            fixed: false, // 不固定
+            maxmin: false,  // 不显示最大化最小化按钮
+            shadeClose: true, // 点击遮罩时关闭弹出层
+            btn: ['提交', '取消'],
+            btnAlign: 'c',
+            yes: function(index, layero){
+              // 获取 iframe 的窗口对象
+              var iframeWin =  window[layero.find('iframe')[0]['name']];
+              var iframeDoc = iframeWin.document;
+              // 获取iframe中输入框的值
+              var repopath = iframeDoc.getElementById('ID-repopath').value;
+              var dist_codename = iframeDoc.getElementById('ID-dist-codename').value;
+              var dist_update = iframeDoc.getElementById('ID-dist-update').value;
+              var dist_architectures = iframeDoc.getElementById('ID-dist-architectures').value;
+              var dist_components = iframeDoc.getElementById('ID-dist-components').value;
+              var dist_description = iframeDoc.getElementById('ID-dist-description').value;
+              var update_name = iframeDoc.getElementById('ID-update-name').value;
+              var update_suite = iframeDoc.getElementById('ID-update-suite').value;
+              var update_architectures = iframeDoc.getElementById('ID-update-architectures').value;
+              var update_components = iframeDoc.getElementById('ID-update-components').value;
+              var update_method = iframeDoc.getElementById('ID-update-method').value;
+              // 对iframe输入的值进行校验
+              // distributions 配置文件校验
+              if($.trim(repopath) == ''|| $.trim(dist_codename) == '' || $.trim(dist_architectures) == '' || $.trim(dist_components) == '') {
+                layer.msg('distributions 配置文件必填项不能为空！',{icon: 2});
+                return false;
+              }
+              // updates 配置文件校验,如果update_name不为空，则校验其余必填项
+              if($.trim(update_name) != '') {
+                if($.trim(update_suite) == '' || $.trim(update_architectures) == '' || $.trim(update_components) == '' || $.trim(update_method) == '') {
+                  layer.msg('updates 配置文件必填项不能为空！',{icon: 2});
+                  return false;
+                }
+              }
+              // 构建 仓库配置信息内容字典
+              var repo_config_dict = {
+                "repopath": repopath,
+                "dist_codename": dist_codename,
+                "dist_update": dist_update,
+                "dist_architectures": dist_architectures,
+                "dist_components": dist_components,
+                "dist_description": dist_description,
+                "update_name": update_name,
+                "update_suite": update_suite,
+                "update_architectures": update_architectures,
+                "update_components": update_components,
+                "update_method": update_method
+              }
+              // 向服务器提交数据，根据配置文件创建新的仓库
+              $.ajax({
+                url:'/api/repo_api/create_new_deb_repo/',
+                type:'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(repo_config_dict),
+                success:function(res){
+                  if(res.code === 0){
+                    layer.msg("新建仓库成功！"+res.msg, {icon: 1});
+                    // 关闭iframe弹出层
+                    console.log(index)
+                    layer.close(index);
+                    // 刷新表格数据
+                    repolist_table.reloadData({scrollPos: 'fixed'});
+                  }else{
+                    layer.alert("新建仓库失败！服务端返回错误信息："+res.msg, {icon: 2});
+                  }
+                },
+                error:function(err){
+                  //console.log(err)
+                  layer.alert("新建仓库失败！"+err.responseJSON.msg, {icon: 2});
+                }
+              });
+                
+            }
+          });
+        }
+      });
+
+      //表单提交
+      //增加仓库管理
+      form.on('submit(add-repo-manager)', function(data){
+        var field = data.field; // 获取表单全部字段值
+        var elem = data.elem; // 获取当前触发事件的元素 DOM 对象，一般为 button 标签
+        var elemForm = data.form; // 获取当前表单域的 form 元素对象，若容器为 form 标签才会返回。
+      
+        // 执行 Ajax 操作，向后端提交增加仓库请求
+        manage_repo('add-repo-manager',field['repo-path'],'')
+
+        // …
+        return false; // 阻止默认 form 跳转
+      });
+      // deb仓库管理列表表格渲染
+      var repolist_table=table.render({
+          elem:"#deb_repo_table",
+          id:"deb_repo_table",
+          url:"/api/repo_api/deb_repo_manage_list/",
+          page: false,
+          skin: 'line',
+          size: 'md',
+          parseData: function(res){
+              return{
+              //注意，code非0时，接口会返回错误信息，不会渲染表格
+              "code": res.code,
+              "msg": res.msg,
+              "count": res.count,
+              "data": res.data
+              }
+          }, 
+          cols:[[
+              {
+                  title:'仓库路径',
+                  width:150,
+                  field:'repopath',
+              },
+              {
+                  title:'codename',
+                  width:150,
+                  field:'codename',
+              },
+              {
+                  title:'components',
+                  width:150,
+                  field:'components',
+              }, 
+              {
+                  title:'architectures',
+                  width:150,
+                  field:'architectures',
+              },
+              {
+                  title:'size',
+                  width:120,
+                  templet: function(d){
+                    var repo_size = d.size;
+                    var repo_units = 'b'; 
+                    if(repo_size/1024>1){
+                        repo_size = repo_size/1024;
+                        repo_units = 'k';
+                    }
+                    if(repo_size/1024>1){
+                        repo_size = repo_size/1024;
+                        repo_units = 'M';
+                    }
+                    if(repo_size/1024>1){
+                        repo_size = repo_size/1024;
+                        repo_units = 'G';
+                    }
+                    if(repo_units != 'b'){
+                      repo_size = repo_size.toFixed(2);     // 保留两位小数
+                    }
+                    return repo_size+repo_units;
+                  }
+              },                         
+              {
+                  title:'仓库功能模块',
+                  width:500,
+                  templet: repo_fun_module
+              }
+          ]]
+      });   
+      
+    // 仓库管理操作函数，修改仓库管理数据库配置
+    function manage_repo(method,repopath='',codename='',id='') {
+      var xmlhttp;
+      let loadIndex;
+      // 处理目录名以及文件名中可能存在的特殊字符
+      var repopath_html = encodeURIComponent(repopath);
+      var codename_html = encodeURIComponent(codename);
+
+      if (window.XMLHttpRequest)
+      {
+        // IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+      }
+      else
+      {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      // 向服务器发送异步请求，获取code为0回复后刷新表格
+      xmlhttp.onreadystatechange=function()
+      {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+          var res_json = JSON.parse(this.responseText);
+          console.log(res_json);
+          if(res_json.code == 0){ // 成功提示
+            layer.msg(util.escape(res_json.msg),{
+              title: ['Success', 'font-size: 18px;color: white'],
+              time: 0,  //不自动关闭
+              btn: ['确定'], 
+            }); // 显示返回的提示信息
+            // 刷新表格数据
+            repolist_table.reloadData({scrollPos: 'fixed'});
+          }else{ // 出错提示
+              layer.msg(res_json.msg,{
+                title: ['Failed', 'font-size: 18px;color: white'],
+                time: 0,  //不自动关闭
+                btn: ['确定'],
+              }
+            ); // 显示返回的提示信息
+          }
+        }
+        layer.close(loadIndex)  // 关闭加载等待提示框
+      }
+      xmlhttp.onloadstart=function(){
+        // 显示加载等待提示框
+        loadIndex = layer.msg('请稍候...', {
+          icon: 16,
+          shade: 0.01,
+          time: 0,  //不自动关闭
+        });      
+      }
+      switch(method) {
+        case 'add-repo-manager':
+          xmlhttp.open("GET","/api/repo_api/add_deb_repo_manage/?repopath="+repopath_html,true);
+          break;
+        case 'delete-repo-manager':
+          xmlhttp.open("GET","/api/repo_api/delete_deb_repo_manage/?id="+id,true);
+          break;
+        case 'refresh-repo-manager':
+          xmlhttp.open("GET","/api/repo_api/refresh_deb_repo_manage/?repopath="+repopath_html+"&codename="+codename_html+"&id="+id,true);
+          break;
+        default:
+          // code block
+      }
+      xmlhttp.send();
+    }
+  });
+</script>
+<script>
+// tips 鼠标悬停提示
+function show_tips(msg, id) {
+    layer.tips(msg, '#' + id, { tips: [2, 'black'],time: 0 });
+}
+function close_tips() {
+    layer.closeAll('tips');
+}
+</script>
+</body>
+</html>

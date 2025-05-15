@@ -1,0 +1,26 @@
+version: '3.3'
+  
+services:
+    nginx:
+      container_name: nginx-1    
+      image: nginx-git:0.1
+      volumes:
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/data-file:/usr/share/nginx/data-file
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/config-file/html:/usr/share/nginx/html
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/config-file/nginx.conf:/etc/nginx/conf.d/default.conf
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/config-file/access-control:/etc/nginx/access-control
+        - /etc/localtime:/etc/localtime:ro
+      restart: always
+      network_mode: host
+
+    py-apt-deb:
+      container_name: py3-apt-dnf-gunicorn-1
+      image: py3-apt-dnf-gunicorn:1.0
+      user: "1000:1000"
+      volumes:
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/data-file:/mydata/data-file
+        - /home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/config-file:/mydata/config-file
+        - /etc/localtime:/etc/localtime:ro
+      restart: always
+      working_dir: /mydata/config-file/py-files
+      network_mode: host

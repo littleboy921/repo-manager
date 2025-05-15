@@ -1,0 +1,10 @@
+FROM py3-apt-dnf-gunicorn:0.1
+LABEL maintainer="zcq<zhangchiqian@uniontech.com>"
+LABEL version="0.1"
+LABEL description="debian with python3 python3-pip rpm dnf reprepro createrepo-c netcat-openbsd git gunicorn,pip3 install requirements.txt,config start.sh"
+RUN useradd -u 1000 -m repo_manager && \
+    mkdir -p /mydata/config-file && \
+    mkdir /mydata/data-file && \
+    chown -R repo_manager /mydata/data-file
+COPY start.sh /start.sh
+CMD ["/bin/sh","/start.sh","-DFOREGROUND"]

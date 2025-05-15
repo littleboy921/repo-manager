@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>文件管理</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <link rel="stylesheet" href="bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+
+</head>
+<body>
+
+<div class="layui-container" style="background-color: #D8D8D8">
+  <!-- 上传文件功能 -->
+  <div class="layui-upload-drag" style="display: block;" id="filemanager-upload-drag">
+    <div class="layui-row">
+      <i class="layui-icon layui-icon-upload"></i> 
+      <div>点击上传，或将文件拖拽到此处（支持多文件同时上传）<br> </div>
+    </div>
+  </div>
+  <!-- 上传文件列表 -->
+  <table class="layui-table">
+    <colgroup>
+      <col>
+      <col width="150">
+      <col width="260">
+      <col width="150">
+    </colgroup>
+    <thead>
+      <th>文件名</th>
+      <th>大小</th>
+      <th>上传进度</th>
+      <th>操作</th>
+    </thead>
+    <tbody id="ID-upload-files-list"></tbody>
+  </table>
+  <!-- 开始上传及清空列表按钮 -->
+  <div class="layui-row">
+    <div class="layui-col-md3 layui-col-md-offset9">
+      <button type="button" class="layui-btn" id="ID-start-upload">
+        开始上传
+      </button>
+      <button id="file-list-clean" type="button" class="layui-btn" lay-on="btn-file-list-clean">
+        <i class="layui-icon layui-icon-refresh"></i>清空列表
+      </button>
+    </div>
+  </div>
+</div>
+
+<br>
+
+<div class="layui-container" style="background-color: #D8D8D8">
+  <!-- laytpl模板渲染位置，对路径输入框以及跳转按钮进行渲染 -->
+  <div id="dir-path-goto" class="layui-row"></div>    
+  <div class="layui-row layui-col-space5">
+    <!-- laytpl模板渲染位置，对返回按钮和根目录按钮进行渲染 -->
+    <div id="view-backto" class="layui-col-md4"></div>
+    <div class="layui-col-md2 layui-col-md-offset6">
+      <button id="new-dir" type="button" class="layui-btn" lay-on="new-dir" >
+        <iconpark-icon name="folder-plus-e7122fln"></iconpark-icon>新建目录
+      </button>
+    </div>
+  </div>
+  <hr>
+  <h2>文件列表</h2>
+  <div class="layui-container" style="background-color: #FFFFFF"></div>
+    <div class="layui-row">
+      <!-- 文件列表渲染 -->
+      <table class="layui-table" id="ID-dir_content" lay-filter="dir_content"></table>
+    </div>
+    <script type="text/html" id="ID-dir-content-page-pagebar"></script>
+  </div>
+</div>
+
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<!-- 引入 iconpark图标 -->
+<script src="iconpark/icons_zcq1.js"></script>
+
+<!-- laytpl模板渲染代码，用于渲染上级目录按钮和根目录按钮 -->
+<script id="backto-tpl" type="text/html">
+  <!--如果为非根目录  -->
+  {{# if(d.path.length != 0 && d.path != null ) { }}
+    <div class="layui-btn-container">
+      <a href="file-manager.html?path=" class="layui-btn">
+        <i class="layui-icon layui-icon-home">根目录</i>
+      </a>    
+      <a href="file-manager.html?path={{= encodeURIComponent(d.backlink) }}" class="layui-btn">
+        <i class="layui-icon layui-icon-up">上级目录</i>
+      </a>
+    </div> 
+  {{#  } }}
+  </script>
+  
+  <!-- laytpl模板渲染代码，用于渲染路径输入框和跳转按钮 -->
+  <script id="dir-path-tpl" type="text/html">
+    <!--如果为非根目录  -->
+      <form class="layui-form layui-form-pane">
+        <div class="layui-form-item">
+          <div class="layui-input-group" id="dir_path_input">
+            {{#  
+              var trans_path = function(path){
+                if(path.length != 0 || path != null){
+                  if( !( path.startsWith('/') ) ){
+                    path= '/'+path;
+                  }
+                  if( !( path.endsWith('/') ) ){
+                    path= path + '/';
+                  }
+                  return path;
+                }
+                else{
+                  return '/';
+                }
+              }; 
+            }}
+            <div class="layui-input-split layui-input-prefix" style="color:white; background-color: #16baaa;width: 100px;">
+              当前路径：
+            </div>
+            <input type="text" name="dir_path" value="{{= trans_path(d.path) }}" class="layui-input" style="width: 750px;"> 
+            <div class="layui-input-suffix">
+              <button type="submit" class="layui-btn" lay-submit lay-filter="dir-path-submit">前往</button>
+            </div>   
+          </div>
+        </div>
+      </form>
+  </script>
+
+<!-- 文件类型图标渲染函数 -->
+<script>
+  function file_type_icon(d) {
+    var file_icon_html = '';
+    switch(d.file_type) {
+      case 'dir': // 如果是目录
+        file_icon_html = '<iconpark-icon name="folder-close" stroke="#000000" fill="#ffd500"></iconpark-icon>';
+        break;
+      case 'empty_link':  // 空链接文件
+        file_icon_html = '<i class="layui-icon layui-icon-file" style="color: #DC143C;"></i>';
+        break;
+      case 'text/plain;charset=utf-8':  // 文本文件
+        file_icon_html = '<iconpark-icon name="notes-e521pjbh"  stroke="#000000" fill="#d8d8d5"></iconpark-icon>';
+        break;
+      // 以下为常见图片类型
+      case 'image/avif':
+      case 'image/gif':
+      case 'image/apng':
+      case 'image/webp':
+      case 'image/svg+xml':
+      case 'image/png':
+      case 'image/jpeg':  
+        file_icon_html = '<iconpark-icon name="picture-one" stroke="#000000"></iconpark-icon>';
+        break;
+      case 'video/mp4': // 视频文件
+        file_icon_html = '<iconpark-icon name="video-two"  stroke="#000000"></iconpark-icon>';
+        break;
+      case 'application/x-tar':  // tar压缩文件
+        file_icon_html = '<i class="bi bi-file-earmark-zip" style="color: #000000;" ></i>';
+        break;
+      case 'application/gzip':  // tar.gz压缩文件
+        file_icon_html = '<i class="bi bi-file-zip" style="color: #000000;" ></i>';
+        break;
+      case 'application/zip': // zip压缩文件
+        file_icon_html = '<iconpark-icon name="file-zip-e5gg2caf" stroke="#000000"></iconpark-icon>';
+        break;
+      case 'application/pdf': // pdf文档
+        file_icon_html = '<i class="bi bi-file-pdf"></i>';
+        break;
+      case 'application/x-debian-package': // deb包文件
+        file_icon_html = '<iconpark-icon name="install"  stroke="#000000"></iconpark-icon>';
+        break;
+      default:  // 其他文件
+        file_icon_html = '<i class="layui-icon layui-icon-file"></i>';
+    }
+    if (d.islink) {   // 如果是链接文件
+      file_icon_html += '<i class="layui-icon layui-icon-link"></i>';
+    }
+    return file_icon_html;
+  }
+</script>
+
+<script>
+  // 定义文件相对路径变量
+  let file_rel_path 
+  let file_rel_path_html
+  // 按文件类型渲染文件名超链接
+  function fileLink(d) {
+    var filename = d.file_name;
+    var url = layui.url();
+    var pre_path = decodeURIComponent(url['search']['path']);
+
+    if ('' == filename || null == filename || undefined == filename) {
+      return '';
+    }
+    // 非根目录下
+    else if (pre_path != null && filename.length > 0) { 
+      // 文件相对路径
+      file_rel_path = pre_path +'/'+ filename;
+      file_rel_path_html = encodeURIComponent(file_rel_path);
+      //如果为目录 
+      if(d.file_type == 'dir') {
+        // 如果是链接文件，则加上显示链接文件源文件路径
+        if(d.islink){
+          return '<a href="file-manager.html?path='+ file_rel_path_html +'" lay-event="link">' + filename +'( -> '+d.islink+')'+'</a>';
+        }
+        return '<a href="file-manager.html?path='+ file_rel_path_html +'" lay-event="link">' + filename + '</a>';
+      }
+      //如果为文件
+      else {
+        // 如果是链接文件，则加上显示链接文件源文件路径
+        if(d.islink){
+          return '<a href="javascript:void(0);" onclick="file_view(\'/api/repo_api/file_contents/?path='+file_rel_path_html+'\')">'+filename +'( --> '+d.islink+')'+'</a>';
+        // 如果是普通文件
+        }else{
+          return '<a href="javascript:void(0);" onclick="file_view(\'file_content.html?path='+ file_rel_path_html +'&is_logfile=0\')">'+ filename +'</a>';
+        }
+        //return '<a href="/api/repo_api/file_contents/?path='+pre_path+'/'+filename+'">'+ filename +'</a>';
+      }                   
+    }
+    else {
+      //根目录下
+      file_rel_path_html = encodeURIComponent(filename);
+      //如果为目录
+      if(d.file_type == 'dir') {      
+        return '<a href="file-manager.html?path='+file_rel_path_html+'" lay-event="link">' + filename + '</a>';
+      }
+      //如果为文件
+      else{
+        // 如果是普通文件
+        return '<a href="javascript:void(0);" onclick="file_view(\'file_content.html?path='+ file_rel_path_html +'&is_logfile=0\')">'+ filename +'</a>';
+        //return '<a href="javascript:void(0);" onclick="file_view(\'/api/repo_api/file_contents/?path='+file_rel_path_html+'\')">'+filename +'</a>';
+        //return '<a href="/api/repo_api/file_contents/?path='+filename+'">'+ filename +'</a>';        
+      }
+    }
+  }
+  // 按文件类型渲染操作功能模块按钮
+  function fun_module(d) {
+    var fun_module_html = '';
+    switch(d.file_type) {
+      case 'dir':
+        // 目录下载按钮、重命名按钮、删除按钮、压缩按钮
+        fun_module_html=`
+          <div class="layui-btn-group">
+            <button id="btn-download" type="button" class="layui-btn layui-btn-disabled">
+              <i class="layui-icon layui-icon-download-circle"></i>下载
+            </button>
+            <button id="btn-rename" type="button" class="layui-btn" lay-on="btn-rename" data-filename="${d.file_name}">
+              <i class="layui-icon layui-icon-edit"></i>重命名
+            </button>
+            <button id="btn-delete" type="button" class="layui-btn" lay-on="btn-dir-delete" data-filename="${d.file_name}">
+              <i class="layui-icon layui-icon-delete"></i>删除
+            </button>
+            <button id="btn-compress" type="button" class="layui-btn" lay-on="btn-dir-compress" data-filename="${d.file_name}">
+              <iconpark-icon name="compression"></iconpark-icon>压缩
+            </button>
+          </div>
+        `
+        break;
+      case 'application/x-tar':
+      case 'application/gzip':
+      case 'application/zip':
+        // 压缩文件下载按钮、重命名按钮、删除按钮、解压缩按钮
+        fun_module_html=`
+          <div class="layui-btn-group">
+              <a id="btn-download" type="button" class="layui-btn" href="/api/repo_api/download_file/?path=${file_rel_path_html}">
+                <i class="layui-icon layui-icon-download-circle"></i>下载
+              </a>
+              <button id="btn-rename" type="button" class="layui-btn" lay-on="btn-rename" data-filename="${d.file_name}">
+                <i class="layui-icon layui-icon-edit"></i>重命名
+              </button>
+              <button id="btn-delete" type="button" class="layui-btn" lay-on="btn-file-delete" data-filename="${d.file_name}">
+                <i class="layui-icon layui-icon-delete"></i>删除
+              </button>
+              <button id="btn-decompress" type="button" class="layui-btn" lay-on="btn-file-decompress" data-filename="${d.file_name}">
+                <iconpark-icon name="file-zip-e5gg2caf"></iconpark-icon>解压缩
+              </button>
+            </div>        
+        `
+        break;
+      default:
+        // 文件下载按钮、重命名按钮、删除按钮
+        fun_module_html=`
+          <div class="layui-btn-group">
+            <a id="btn-download" type="button" class="layui-btn" href="/api/repo_api/download_file/?path=${file_rel_path_html}">
+              <i class="layui-icon layui-icon-download-circle"></i>下载
+            </a>
+            <button id="btn-rename" type="button" class="layui-btn" lay-on="btn-rename" data-filename="${d.file_name}">
+              <i class="layui-icon layui-icon-edit"></i>重命名
+            </button>
+            <button id="btn-delete" type="button" class="layui-btn" lay-on="btn-file-delete" data-filename="${d.file_name}">
+              <i class="layui-icon layui-icon-delete"></i>删除
+            </button>
+          </div>
+        `      
+    }
+    return fun_module_html;
+  }
+</script>
+
+<!-- 文件大小格式化函数 -->
+<script>  
+function fileSize(d) {
+    var fsize = d.file_size;
+    var funits = 'b'; 
+    if(fsize/1024>1){
+        fsize = fsize/1024;
+        funits = 'k';
+    }
+    if(fsize/1024>1){
+        fsize = fsize/1024;
+        funits = 'M';
+    }
+    if(fsize/1024>1){
+        fsize = fsize/1024;
+        funits = 'G';
+    }
+    if(funits != 'b'){
+      fsize = fsize.toFixed(2);     // 保留两位小数
+    }
+    return fsize+funits;
+  }
+</script>
+
+<script>
+  layui.use(function(){
+    let table = layui.table;
+    let url = layui.url();
+    let layer = layui.layer;
+    let util = layui.util;
+    let laytpl = layui.laytpl;
+    let form = layui.form;
+    let $ = layui.$;
+    
+    // 文件信息列表渲染
+    var dir_content_table= table.render({
+      elem:"#ID-dir_content",
+      id:"ID-dir_content_table_render",
+      page: {
+        limit: 20, // 默认每页显示的条数
+        limits: [20, 50, 100,1000], // 自定义分页条数选项
+      },
+      pagebar: '#ID-dir-content-page-pagebar',
+      skin: 'line',
+      size: 'md',
+      data: [],
+      cols:[[
+        {
+          title:'文件类型',
+          width:100,
+          templet: file_type_icon
+        },
+        {
+          //field:'file_name', 
+          title:'文件名',
+          width:200,
+          sort: true,
+          templet: fileLink
+        },
+        { 
+          title:'文件大小',
+          width:120,
+          templet: fileSize
+        },
+        {
+          title:'修改时间',
+          width:200,
+          sort: true,
+          field:'file_mtime'          
+        },
+        {
+          title:'功能模块',
+          width:400,
+          templet: fun_module
+        }
+      ]]
+    });
+    
+    // 从后端获取数据并重新渲染表格
+    get_file_info(url['search']['path'],'ID-dir_content_table_render');
+
+
+    // laytpl模板渲染，用于渲染返回按钮和根目录按钮
+    var getTpl =  document.getElementById('backto-tpl').innerHTML; 
+    var view = document.getElementById('view-backto');
+    var path = decodeURIComponent(url['search']['path']);
+    if (path != null ){
+      var backlink_array = path.split("/");
+      backlink_array.pop();
+      var backlink = '';
+      for (var i=0;i<backlink_array.length;i++){
+        if ( i != backlink_array.length -1 ) {
+          backlink = backlink+backlink_array[i]+'/'
+        }
+        else{
+          backlink = backlink+backlink_array[i]
+        } 
+      }
+      var data = {
+        path: path,
+        backlink: backlink
+      };
+      laytpl(getTpl).render(data, function(html){
+        view.innerHTML = html;
+      });
+    }
+
+    // laytpl模板渲染，用于渲染路径输入框和跳转按钮
+    var getTpl =  document.getElementById('dir-path-tpl').innerHTML; 
+    var view = document.getElementById('dir-path-goto');
+    laytpl(getTpl).render(data, function(html){
+      view.innerHTML = html;
+    });
+    
+    // 上传文件
+    let upload = layui.upload;
+    let element = layui.element;
+    var ot = {}; // 上次上传时间戳
+    var oloaded = {}; // 上次上传已上传大小
+    // 渲染
+    var uploadListIns = upload.render({
+      elem: '#filemanager-upload-drag',
+      elemList: $('#ID-upload-files-list'), // 列表元素对象
+      url: "/api/repo_api/receive_file/?path="+url['search']['path'], // 实际使用时改成您自己的上传api接口即可。
+      accept: 'file',
+      multiple: true,
+      auto: false,
+      bindAction: '#ID-start-upload',
+      choose: function(obj){
+        var that = this;
+        var files = this.files = obj.pushFile(); // 将每次选择的文件追加到文件队列
+        // console.log('obj:')
+        // console.log(obj)
+        // console.log('getChooseFiles:')
+        // console.log(obj.getChooseFiles())
+        // 读取本地文件
+        for (const [index, file] of Object.entries(obj.getChooseFiles())) {    
+          var tr = $(['<tr id="upload-'+ index +'">',
+            '<td>'+ file.name +'</td>',
+            '<td>'+ file.sizes +'</td>',
+            '<td><div class="layui-progress" lay-filter="file-upload-progress-'+ index +'"><div class="layui-progress-bar" lay-percent=""></div></div><span id="speed-lefttime'+ index+'"></span></td>',
+            '<td>',
+              '<button class="layui-btn layui-btn-xs upload-file-reload layui-hide">重传</button>',
+              '<button type="button" class="layui-btn layui-btn-xs layui-btn-danger upload-file-delete" id="ID-upload-file-delete-'+index+'")">取消</button>',
+            '</td>',
+          '</tr>'].join(''));
+          
+          // 单个重传
+          tr.find('.upload-file-reload').on('click', function(){
+            obj.upload(index, file);
+          });
+          // 删除文件
+          tr.find('.upload-file-delete').on('click', function(){
+            delete files[index]; // 删除对应的文件
+            //tr.remove(); // 删除表格行
+            document.getElementById('upload-'+index).remove();
+            // 清空 input file 值，以免删除后出现同名文件不可选
+            uploadListIns.config.elem.next()[0].value = ''; 
+          });
+          that.elemList.append(tr);
+          element.render('progress'); // 渲染新加的进度条组件 
+        };
+
+      },
+      before: function(obj){
+        var that = this;
+        for (const [index, file] of Object.entries(obj.getChooseFiles())) {
+          ot[index] = Date.now(); 
+          oloaded[index] = 0;
+          var tr = that.elemList.find('tr#upload-'+ index);
+          var tds = tr.children();
+          // 开始上传时删除操作按钮
+          tds.eq(3).html('');
+        };
+      },
+      progress: function(n, elem,res,index){
+        element.progress('file-upload-progress-'+ index, n + '%');
+        if (res['lengthComputable'] == true ){
+          if ( oloaded[index] != 0 ){
+            var nt = Date.now();
+            var pertime = (nt-ot[index])/1000; // 上传时间间隔,单位s
+            // console.log('progress: res:')
+            // console.log(index)
+            //console.log(res)
+            var speed = (res['loaded'] - oloaded[index])/pertime; // 上传速度,单位b/s
+            var lefttime = (res['total']-res['loaded'])/speed; // 剩余时间,单位s
+            // 优化上传速度显示
+            var s_units = 'B/s';//单位名称
+              if(speed/1024>1){
+                  speed = speed/1024;
+                  s_units = 'KB/s';
+              }
+              if(speed/1024>1){
+                  speed = speed/1024;
+                  s_units = 'MB/s';
+              }
+            speed = speed.toFixed(1); // 保留一位小数
+            var lefttime_str = parseInt(lefttime/60)+"m"+parseInt(lefttime%60)+"s";
+            $('#speed-lefttime'+ index).html('上传速度：'+speed+s_units+'，剩余时间：'+lefttime_str);
+          };
+          ot[index] = nt;
+          oloaded[index] = res['loaded'];
+        }
+        //console.log(e)
+      },
+      done: function(res, index, upload){
+        var that = this;
+        if(res.code == 0){ // 上传成功
+          var tr = that.elemList.find('tr#upload-'+ index)
+          var tds = tr.children()
+          tds.eq(3).html(''); // 清空操作
+          delete this.files[index]; // 删除文件队列已经上传成功的文件
+          return;
+        }
+      },
+      allDone: function(obj){
+        //所有文件都上传完毕
+        //spd_lefttime.innerHTML = ''; // 速度剩余时间复位
+        //element.progress('file-upload-progress', '0%'); // 进度条复位
+        get_file_info(url['search']['path'],'ID-dir_content_table_render');
+        layer.alert('上传文件总数:'+obj.total+'，成功上传:'+obj.successful+'，上传失败:'+obj.failed)
+        //清空进度时间记录
+        ot = {};
+        oloaded = {};
+      },
+      error: function (index, upload,res) {
+        var that = this;
+        var tr = that.elemList.find('tr#upload-'+ index);
+        var tds = tr.children();
+        // 显示重传
+        tds.eq(3).find('.upload-file-reload').removeClass('layui-hide');
+        layer.alert(JSON.parse(res));
+      }
+    });
+
+    // 文件操作函数，支持重命名、删除文件、压缩文件、解压缩文件
+    function manipuldate_file(method,dir_path,file_name,new_name='') {
+      var xmlhttp;
+      let loadIndex;
+      // 处理目录名以及文件名中可能存在的特殊字符
+      var dir_path_html = encodeURIComponent(dir_path);
+      var file_name_html = encodeURIComponent(file_name);
+      var new_name_html = encodeURIComponent(new_name);
+      // console.log('dir_path_html:'+dir_path_html,'file_name_html:'+file_name_html,'new_name_html:'+new_name_html);
+      if (window.XMLHttpRequest)
+      {
+        // IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+      }
+      else
+      {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      // 向服务器发送异步请求，获取code为0回复后刷新表格
+      xmlhttp.onreadystatechange=function()
+      {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+          var res_json = JSON.parse(this.responseText);
+          //console.log(res_json);
+          if(res_json.code == 0){ // 成功提示
+            layer.msg(util.escape(res_json.msg),{
+              title: ['Success', 'font-size: 18px;color: white'],
+              time: 0,  //不自动关闭
+              btn: ['确定'], 
+            }); // 显示返回的提示信息
+            //刷新文件列表
+            get_file_info(url['search']['path'],'ID-dir_content_table_render');
+          }else{ // 出错提示
+              layer.msg(util.escape(res_json.msg),{
+                title: ['Failed', 'font-size: 18px;color: white'],
+                time: 0,  //不自动关闭
+                btn: ['确定'],
+              }
+            ); // 显示返回的提示信息
+          }
+        }
+        layer.close(loadIndex)  // 关闭加载等待提示框
+      }
+      xmlhttp.onloadstart=function(){
+        // 显示加载等待提示框
+        loadIndex = layer.msg('请稍候...', {
+          icon: 16,
+          shade: 0.01,
+          time: 0,  //不自动关闭
+        });      
+      }
+      switch(method) {
+        case 'rename':
+          xmlhttp.open("GET","/api/repo_api/rename_file/?dir_path="+dir_path_html+"&file_name="+file_name_html+"&new_name="+new_name_html,true);
+          break;
+        case 'delete':
+          xmlhttp.open("GET","/api/repo_api/delete_file/?dir_path="+dir_path_html+"&file_name="+file_name_html,true);
+          // code block
+          break;
+        case 'compress':
+          xmlhttp.open("GET","/api/repo_api/compress_dir/?dir_path="+dir_path_html+"&file_name="+file_name_html,true);
+          break;
+        case 'decompress':
+          xmlhttp.open("GET","/api/repo_api/decompress_file/?dir_path="+dir_path_html+"&file_name="+file_name_html,true);
+          break;
+        case 'new-dir':
+          xmlhttp.open("GET","/api/repo_api/new_dir/?dir_path="+dir_path_html+"&new_dir_name="+file_name_html,true);
+          break;
+        default:
+          // code block
+      }
+      xmlhttp.send();
+    }
+    // 文件操作按钮点击事件
+    util.on('lay-on', {
+      'btn-rename': function(othis){
+        layer.prompt({
+          title: '重命名',
+          value: othis.context.dataset.filename
+        }, function(value, index, elem){
+          if(value === '') return elem.focus();
+          manipuldate_file('rename',decodeURIComponent(url['search']['path']),othis.context.dataset.filename,value);
+          // 关闭 prompt
+          layer.close(index);
+        });
+      },
+      'btn-file-delete': function(othis){
+        manipuldate_file('delete',decodeURIComponent(url['search']['path']),othis.context.dataset.filename);
+      },
+      'btn-dir-delete': function(othis){
+        layer.prompt({
+          title: '请输入"YES"以确认删除目录:'+othis.context.dataset.filename,
+        }, function(value, index, elem){
+          if(value == 'YES') {
+            manipuldate_file('delete',decodeURIComponent(url['search']['path']),othis.context.dataset.filename);
+            layer.close(index);
+          }else if(value === '') {
+            return elem.focus();
+          }
+        })
+      },
+      'btn-dir-compress': function(othis){
+        manipuldate_file('compress',decodeURIComponent(url['search']['path']),othis.context.dataset.filename);
+      },
+      'btn-file-decompress': function(othis){
+        manipuldate_file('decompress',decodeURIComponent(url['search']['path']),othis.context.dataset.filename);
+      },
+      'new-dir': function(othis){
+        layer.prompt({
+          title: '新建目录',
+          value: '新建目录'
+        }, function(value, index, elem){
+          if(value === '') return elem.focus();
+          manipuldate_file('new-dir',decodeURIComponent(url['search']['path']),value);
+          // 关闭 prompt
+          layer.close(index);
+        });        
+      },
+      'btn-file-list-clean': function(othis){
+        document.getElementById('ID-upload-files-list').innerHTML='';
+      },
+    });
+
+    // 路径提交事件
+    form.on('submit(dir-path-submit)', function(data){
+      var field = data.field; // 获取表单全部字段值
+      var dir_path_html = encodeURIComponent(field['dir_path']);  //对文件路径进行编码
+      window.location.href="file-manager.html?path="+dir_path_html
+      return false;// 阻止表单跳转
+    });
+  });
+</script>
+
+<script>
+  function get_file_info(dir_path_html,table_render_id) {
+    let $ = layui.$;
+    let table = layui.table;
+    var api_url="/api/repo_api/file_list/?path="+dir_path_html;
+    var result
+    $.ajax({
+      type: "get",
+      url: api_url,
+      dataType: "json",
+      async:  true,
+      success: function(res) {
+        result = res;
+        table.reloadData(
+          table_render_id,
+          {
+            data: result.data,
+            scrollPos: 'fixed'
+          }
+        )
+      },
+      error: function(jqXHR){
+        console.log(jqXHR.status);
+        console.log(jqXHR.responseText);
+      }
+    })
+  }
+</script>
+
+<!-- 弹出层，显示文件内容 -->
+<script type="text/javascript">
+  function file_view(url) {
+    var layer = layui.layer;
+    layer.open({
+        type: 2,
+        //width,height
+        area: ['1000px', '600px'],
+        fixed: false, //不固定
+        maxmin: true,
+        content: url
+    });
+  };
+</script>
+</body>
+</html>

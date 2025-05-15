@@ -1,0 +1,58 @@
+{
+  "id": "",
+  "name": "",
+  "font_family": "iconfont",
+  "css_prefix_text": "icon-",
+  "description": "",
+  "glyphs": [
+    {
+      "icon_id": "41010503",
+      "name": "权限配置",
+      "font_class": "cedaohang_quanxianpeizhi",
+      "unicode": "e612",
+      "unicode_decimal": 58898
+    },
+    {
+      "icon_id": "41010504",
+      "name": "字典管理",
+      "font_class": "cedaohang_zidianguanli",
+      "unicode": "e613",
+      "unicode_decimal": 58899
+    },
+    {
+      "icon_id": "41010505",
+      "name": "设置",
+      "font_class": "dingbudaohang_shezhi",
+      "unicode": "e614",
+      "unicode_decimal": 58900
+    },
+    {
+      "icon_id": "41010507",
+      "name": "运营管理",
+      "font_class": "cedaohang_yunyingguanli",
+      "unicode": "e615",
+      "unicode_decimal": 58901
+    },
+    {
+      "icon_id": "41010516",
+      "name": "登录记录",
+      "font_class": "touxiangxiala_denglu",
+      "unicode": "e616",
+      "unicode_decimal": 58902
+    },
+    {
+      "icon_id": "41010517",
+      "name": "收起",
+      "font_class": "shouqi",
+      "unicode": "e617",
+      "unicode_decimal": 58903
+    },
+    {
+      "icon_id": "41010523",
+      "name": "展开",
+      "font_class": "zhankai",
+      "unicode": "e618",
+      "unicode_decimal": 58904
+    }
+  ]
+}

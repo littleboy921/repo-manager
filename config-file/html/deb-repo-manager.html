@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>deb仓库管理</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <link rel="stylesheet" href="bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    .layui-form-label {
+        width: 160px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="layui-container" style="background-color: #D8D8D8"></div>
+<h2>当前仓库：</h2>
+<h2 id="ID-current-repo" style="color:blue"></h2>
+<p id="ID-current-repo-arch-description"></p>
+<div>
+  <a href="deb-repo-manager-list.html" class="layui-btn">
+    <i class="layui-icon layui-icon-home">返回仓库列表</i>
+  </a>  
+</div>
+
+<!-- 上传deb包并导入仓库接口界面 -->
+<div class="layui-fluid" style="background-color: #D8D8D8">
+    <h2>导入deb包</h2>
+    <!-- 选择仓库component -->
+    <form class="layui-form layui-row" action="" lay-filter="form-choose-component-filter" >
+    <div class="layui-col-md6">
+      <div class="layui-form-item">
+        <label class="layui-form-label" style="color:white; background-color: #16baaa;">选择要导入的component</label>
+        <div class="layui-input-inline" style="width: 200px;">
+            <select id="component-select" name="component-select" lay-filter="component-select-filter" >
+              <option value="">未选择(默认按照deb包的Section字段导入)</option>
+            </select>
+        </div>
+      </div>
+    </div>
+    </form>
+
+    <div class="layui-container"></div>
+    <!-- 上传文件功能 -->
+      <div class="layui-upload-drag" style="display: block;" id="repo-manager-upload-drag">
+        <div class="layui-row">
+          <i class="layui-icon layui-icon-upload"></i> 
+          <div>点击上传，或将文件拖拽到此处（支持多文件同时上传）<br> </div>
+        </div>
+      </div>
+      <!-- 进度条 -->
+      <!-- 上传文件列表 -->
+      <table class="layui-table">
+        <colgroup>
+          <col>
+          <col width="150">
+          <col width="260">
+          <col width="150">
+        </colgroup>
+        <thead>
+          <th>文件名</th>
+          <th>大小</th>
+          <th>上传进度</th>
+          <th>操作</th>
+        </thead>
+        <tbody id="ID-upload-files-list"></tbody>
+      </table>
+      <!-- 开始上传及清空列表按钮 -->
+      <div class="layui-row">
+        <div class="layui-col-md3 layui-col-md-offset9">
+          <button type="button" class="layui-btn" id="ID-start-upload">
+            开始上传
+          </button>
+          <button id="file-list-clean" type="button" class="layui-btn" lay-on="btn-file-list-clean">
+            <i class="layui-icon layui-icon-refresh"></i>清空列表
+          </button>
+        </div>
+      </div>
+  </div>
+  <hr>
+
+  <!-- 从上游仓库同步功能 -->
+  <div class="layui-fluid" style="background-color: #D8D8D8">
+    <h2>上游仓库：</h2>
+    <p id="ID-upstream-repo" style="color:blue;word-wrap:break-word;"></p>
+    <button id="ID-repo-update" type="button" class="layui-btn" lay-on="btn-repo-update">
+      <i class="bi bi-arrow-bar-down"></i>  从上游仓库同步
+    </button>
+    <button id="ID-edit-update-method" type="button" class="layui-btn" lay-on="btn-edit-update-method">
+      <i class="layui-icon layui-icon-edit"></i> 修改上游仓库地址
+    </button>
+  </div>
+  <hr>
+
+  <!-- 包信息搜索功能 -->
+  <div class="layui-fluid" style="background-color: #D8D8D8">
+    <form class="layui-form layui-form-pane layui-row">
+      <div class="layui-col-md8">
+        <label  class="layui-form-label" style="color:white; background-color: #16baaa;" >输入包名：</label>
+        <div class="layui-input-block" id="pkg-name-search">
+          <input type="text" name="pkg-name" class="layui-input">
+        </div>
+      </div>
+      <div class="layui-col-md4"> 
+          <button id="ID-pkg-name-submit" type="submit" class="layui-btn" lay-submit lay-filter="pkg-name-submit" onmouseover="show_tips('包名为空时返回所有包信息列表',this.id)" onmouseleave="close_tips()">搜索(支持通配符*)</button>
+      </div>
+    </form>
+
+    <h1>搜索结果</h1>
+    <div class="layui-row">
+      <!-- 仓库包搜索结果列表渲染 -->
+      <table class="layui-table" id="ID-pkg-list" lay-filter="pkg-list"></table>
+    </div>
+  </div>
+</div>
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+
+<script>
+  layui.use(function(){
+    let $ = layui.$;
+    let table = layui.table;
+    let form = layui.form;
+    let util = layui.util;
+    let upload = layui.upload;
+    let element = layui.element;
+    let url = layui.url();
+
+    let repopath = decodeURIComponent(url['search']['repopath']);
+    let abspath = decodeURIComponent(url['search']['abspath']);
+    let codename = decodeURIComponent(url['search']['codename']);
+    let components = decodeURIComponent(url['search']['components']);
+    let architectures = decodeURIComponent(url['search']['architectures']);
+    let description = decodeURIComponent(url['search']['description']);
+    // 渲染当前仓库信息
+    $('#ID-current-repo').html(repopath+'  '+codename+'  '+components);
+    $('#ID-current-repo-arch-description').html('architectures: '+architectures+'<br/>description: '+description)
+    // 从仓库update配置文件获取上游仓库信息
+    function get_deb_repo_update_info(){
+      $.ajax({
+        url: '/api/repo_api/get_deb_repo_update_info/?repopath='+url['search']['repopath']+'&codename='+url['search']['codename'],
+        type: 'GET',
+        dataType: 'json',
+        success: function(res){
+          if(res.code == 0){
+            var upstream_repo_info = res.data;
+            $('#ID-upstream-repo').text(upstream_repo_info);
+          }else{
+            layer.msg(res.msg);
+            // 如果没有update配置文件，则禁用修改上游仓库按钮
+            $('#ID-edit-update-method').addClass('layui-btn-disabled').attr('disabled',true)
+          }
+        },
+        error: function(res){
+          layer.msg('获取上游仓库信息失败');
+        }
+      });
+    }
+    get_deb_repo_update_info();
+
+    //获取当前仓库component列表，并渲染到select下拉框中
+    $.ajax({
+      url: '/api/repo_api/get_repo_component_list/?repopath='+url['search']['repopath']+'&codename='+url['search']['codename'],
+      type: 'GET',
+      dataType: 'json',
+      success: function(res){
+        //console.log(res);
+        if(res.code == 0){
+          var component_list = res.data;
+          for(var i=0;i<component_list.length;i++){
+            $('#component-select').append('<option value="'+component_list[i]+'">'+component_list[i]+'</option>\n')
+          }
+          form.render('select',"form-choose-component-filter");
+        }else{
+          layer.msg(res.msg);
+        }
+      },
+      error: function(res){
+        layer.msg('获取component列表失败');
+      }
+    });
+
+    // 包信息表格渲染
+    var pkg_list_table_inst = table.render({
+      elem: '#ID-pkg-list',
+      id: 'ID-pkg-list-render',
+      page: {
+        limit: 20, // 默认每页显示的条数
+        limits: [20, 50, 100,1000], // 自定义分页条数选项
+      },
+      skin: 'line',
+      size: 'md', 
+      cols:[[
+          {
+            title:'Codename',
+            width: '10%',
+            field:'codename'
+          },
+          {
+            //field:'file_name', 
+            title:'Component',
+            width:140,
+            sort: true,
+            field:'component'
+          },
+          { 
+            title:'Architecture',
+            width:140,
+            sort: true,
+            field:'arch'
+          },
+          { 
+            title:'PackageName',
+            width:300,
+            field:'pkg_name'
+          },
+          { 
+            title:'PackageVersion',
+            width:250,
+            sort: true,
+            templet: function(d){
+              return decodeURIComponent(d.pkg_ver)
+            }
+          },        
+          {
+            title:'功能模块',
+            width:200,
+            templet: pkg_manager_func
+          }
+      ]],
+      data: []
+    });
+
+    // 包名搜索提交按钮事件，搜索成功后触发表格渲染
+    form.on('submit(pkg-name-submit)', function(data){
+      var field = data.field; // 获取表单全部字段值
+      // 对包名进行通配符匹配搜索并渲染表格
+      get_pkg_info('/api/repo_api/repo_pkg_search/?repopath='+url['search']['repopath']+'&codename='+url['search']['codename']+'&pkg_name_pattern='+encodeURIComponent(field['pkg-name']),'ID-pkg-list-render');
+      return false;// 阻止表单跳转
+    });
+
+    //文件上传模块渲染
+    var spd_lefttime = document.getElementById("speed-lefttime");
+    var ot =0;  // 上次上传时间戳 
+    var oloaded=0; // 上次上传已上传大小
+    
+    // 上传文件
+    var ot = {}; // 上次上传时间戳
+    var oloaded = {}; // 上次上传已上传大小
+    // 渲染上传文件列表
+    var uploadListIns = upload.render({
+      elem: '#repo-manager-upload-drag',
+      elemList: $('#ID-upload-files-list'), // 列表元素对象
+      url: "/api/repo_api/receive_file/?path="+url['search']['repopath'], // 实际使用时改成您自己的上传api接口即可。
+      accept: 'file',
+      multiple: true,
+      auto: false,
+      bindAction: '#ID-start-upload',
+      choose: function(obj){
+        var that = this;
+        var files = this.files = obj.pushFile(); // 将每次选择的文件追加到文件队列
+        // 读取本地文件名、大小信息
+        for (const [index, file] of Object.entries(obj.getChooseFiles())) {    
+          var tr = $(['<tr id="upload-'+ index +'">',
+            '<td>'+ file.name +'</td>',
+            '<td>'+ file.sizes +'</td>',
+            '<td><div class="layui-progress" lay-filter="file-upload-progress-'+ index +'"><div class="layui-progress-bar" lay-percent=""></div></div><span id="speed-lefttime'+ index+'"></span></td>',
+            '<td>',
+              '<button class="layui-btn layui-btn-xs upload-file-reload layui-hide">重传</button>',
+              '<button type="button" class="layui-btn layui-btn-xs layui-btn-danger upload-file-delete" id="ID-upload-file-delete-'+index+'")">取消</button>',
+            '</td>',
+          '</tr>'].join(''));
+          
+          // 单个重传
+          tr.find('.upload-file-reload').on('click', function(){
+            obj.upload(index, file);
+          });
+          // 删除文件
+          tr.find('.upload-file-delete').on('click', function(){
+            delete files[index]; // 删除对应的文件
+            //tr.remove(); // 删除表格行
+            document.getElementById('upload-'+index).remove();
+            // 清空 input file 值，以免删除后出现同名文件不可选
+            uploadListIns.config.elem.next()[0].value = ''; 
+          });
+          that.elemList.append(tr);
+          element.render('progress'); // 渲染新加的进度条组件 
+        };
+
+      },
+      before: function(obj){
+        var that = this;
+        for (const [index, file] of Object.entries(obj.getChooseFiles())) {
+          ot[index] = Date.now(); 
+          oloaded[index] = 0;
+          var tr = that.elemList.find('tr#upload-'+ index);
+          var tds = tr.children();
+          // 开始上传时删除操作按钮
+          tds.eq(3).html('');
+        };
+      },
+      progress: function(n, elem,res,index){
+        element.progress('file-upload-progress-'+ index, n + '%');
+        if (res['lengthComputable'] == true ){
+          if ( oloaded[index] != 0 ){
+            var nt = Date.now();
+            var pertime = (nt-ot[index])/1000; // 上传时间间隔,单位s
+            var speed = (res['loaded'] - oloaded[index])/pertime; // 上传速度,单位b/s
+            var lefttime = (res['total']-res['loaded'])/speed; // 剩余时间,单位s
+            // 优化上传速度显示
+            var s_units = 'B/s';//单位名称
+              if(speed/1024>1){
+                  speed = speed/1024;
+                  s_units = 'KB/s';
+              }
+              if(speed/1024>1){
+                  speed = speed/1024;
+                  s_units = 'MB/s';
+              }
+            speed = speed.toFixed(1); // 保留一位小数
+            var lefttime_str = parseInt(lefttime/60)+"m"+parseInt(lefttime%60)+"s";
+            $('#speed-lefttime'+ index).html('上传速度：'+speed+s_units+'，剩余时间：'+lefttime_str);
+          };
+          ot[index] = nt;
+          oloaded[index] = res['loaded'];
+        }
+      },
+      done: function(res, index, upload){
+        var that = this;
+        if(res.code == 0){ // 上传成功
+          var tr = that.elemList.find('tr#upload-'+ index)
+          var tds = tr.children()
+          tds.eq(3).html(''); // 清空操作
+          delete this.files[index]; // 删除文件队列已经上传成功的文件
+          return;
+        }
+      },
+      allDone: function(obj){
+        layer.alert('上传文件总数:'+obj.total+'，成功上传:'+obj.successful+'，上传失败:'+obj.failed)
+        //清空进度时间记录
+        ot = {};
+        oloaded = {};
+        var form_data = form.val('form-choose-component-filter'); // 获取表单数据
+        var component = form_data['component-select']; // 获取选择的component
+        repo_pkg_manager('import_pkg',repopath,codename,component,'','','');
+      },
+      error: function (index, upload,res) {
+        var that = this;
+        var tr = that.elemList.find('tr#upload-'+ index);
+        var tds = tr.children();
+        // 显示重传
+        tds.eq(3).find('.upload-file-reload').removeClass('layui-hide');
+        layer.alert(JSON.parse(res));
+      }
+    });
+
+    //按钮事件
+    util.on('lay-on', {
+      'del_pkg':function(othis){
+        repo_pkg_manager('del_pkg',repopath,othis.context.dataset.codename,othis.context.dataset.component,othis.context.dataset.arch,'',othis.context.dataset.pkgname);
+      },
+      'btn-file-list-clean': function(othis){
+        document.getElementById('ID-upload-files-list').innerHTML='';
+      },
+      'btn-repo-update': function(othis){
+        repo_pkg_manager('deb_repo_update',repopath,codename,'','','');
+      },
+      'btn-edit-update-method': function(othis){
+        layer.open({
+          type: 1,
+          title: '修改上游仓库地址',
+          area: ['500px', '200px'],
+          content: '<input type="text" name="update-method" id="ID-update-method" value="'+$('#ID-upstream-repo').text()+'"class="layui-input">',
+          btn: ['确定'],
+          yes: function(index, layero){
+            var update_method = $('#ID-update-method').val();
+            console.log(update_method);
+            $.ajax({
+              url: '/api/repo_api/edit_deb_repo_update_conf/?abspath='+abspath+'&codename='+codename+'&update_method='+update_method,
+              type: 'GET',
+              dataType: 'json',
+              success: function(res){
+                if(res.code == 0){
+                  // 弹出提示
+                  layer.alert('Edit update config file successfull!'+res.msg, {icon: 1}, function(index){
+                    get_deb_repo_update_info();
+                    layer.close(index);
+                  });
+                }else{
+                  layer.msg('Edit update config file failed'+res.msg);
+                }
+              },
+              error: function(res){
+                layer.msg('Edit update config file failed'+res.msg);
+              }
+            });
+            layer.close(index);
+          }
+        });
+      }, 
+    });
+    
+    // 包管理功能模块按钮渲染:删除功能
+    function pkg_manager_func(d) {
+      var fun_module_html = `
+        <button id="btn-del_pkg" type="button" class="layui-btn" lay-on='del_pkg' data-codename="${d.codename}" data-component="${d.component}" data-arch="${d.arch}" data-pkgname="${d.pkg_name}" >
+          <i class="layui-icon layui-icon-delete"></i>删除
+        </button>
+        `
+      return fun_module_html;
+    }
+    //仓库包管理功能
+    function repo_pkg_manager(method,repopath,codename,component,arch,deb_file='',pkg_name='') {
+      var xmlhttp;
+      let loadIndex;
+      // 处理目录名以及文件名中可能存在的特殊字符
+      var repopath_html = encodeURIComponent(repopath);
+      var codename_html = encodeURIComponent(codename);
+      var component_html = encodeURIComponent(component);
+      var deb_file_html = encodeURIComponent(deb_file);
+      var pkg_name_html = encodeURIComponent(pkg_name);
+
+      if (window.XMLHttpRequest)
+      {
+        // IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+      }
+      else
+      {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      // 向服务器发送异步请求，并获取返回code
+      xmlhttp.onreadystatechange=function()
+      {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+          var res_json = JSON.parse(this.responseText);
+          //console.log(res_json);
+          if(res_json.code == 0){ // 成功提示
+            layer.msg(res_json.msg,{
+              title: ['Success', 'font-size: 18px;color: white'],
+              time: 0,  //不自动关闭
+              btn: ['确定'], 
+            }); // 显示返回的提示信息
+            // 触发点击搜索按钮，刷新页面表格
+            $('#ID-pkg-name-submit').click();
+          }else{ // 出错提示
+              layer.msg(res_json.msg,{
+                title: ['Failed', 'font-size: 18px;color: white'],
+                time: 0,  //不自动关闭
+                btn: ['确定'],
+              }
+            ); // 显示返回的提示信息
+          }
+        }
+        layer.close(loadIndex)  // 关闭加载等待提示框
+      }
+      xmlhttp.onloadstart=function(){
+        // 显示加载等待提示框
+        loadIndex = layer.msg('请稍候...', {
+          icon: 16,
+          shade: 0.01,
+          time: 0,  //不自动关闭
+        });      
+      }
+      switch(method) {
+        //删除仓库中的包
+        case 'del_pkg':
+          xmlhttp.open("GET","/api/repo_api/del_pkg_from_repo/?repopath="+repopath_html+"&codename="+codename_html+"&component="+component_html+"&arch="+arch+"&pkg_name="+pkg_name_html,true);
+          break;
+        //将仓库目录下的包导入到仓库，导入失败的deb包放到trash目录
+        case  'import_pkg':
+          xmlhttp.open("GET","/api/repo_api/import_deb_pkg_to_repo/?repopath="+repopath_html+"&codename="+codename_html+"&component="+component_html,true);
+          break;
+        case 'deb_repo_update':
+          xmlhttp.open("GET","/api/repo_api/deb_repo_update/?repopath="+repopath_html+"&codename="+codename_html,true);
+          break;
+        default:
+          // code block
+      }
+      xmlhttp.send();
+    }
+  });
+</script>
+
+<script>
+  // 向后端发送请求，获取包信息列表并刷新页面表格
+  function get_pkg_info(api_url,table_render_id) {
+    let $ = layui.$;
+    let table = layui.table;
+    $.ajax({
+      type: "get",
+      url: api_url,
+      dataType: "json",
+      async:  true,
+      success: function(res) {
+        table.reloadData(
+          table_render_id,
+          {
+            data: res.data,
+            scrollPos: 'fixed'
+          }
+        )
+      },
+      error: function(jqXHR){
+        console.log(jqXHR.status);
+        console.log(jqXHR.responseText);
+      }
+    })
+  }
+</script>
+
+<script>
+  // tips 鼠标悬停提示
+  function show_tips(msg, id) {
+      layer.tips(msg, '#' + id, { tips: [2, 'black'],time: 0 });
+  }
+  function close_tips() {
+      layer.closeAll('tips');
+  }
+</script>
+</body>
+</html>

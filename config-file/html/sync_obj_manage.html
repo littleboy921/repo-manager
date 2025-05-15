@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>同步内容管理</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <link rel="stylesheet" href="bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    .layui-form-label {
+        width: 160px;
+    }
+    hr {
+       border: 0;
+       height: 1px;
+       margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+<h2>管理需要同步的内容：</h2>
+<hr />
+<div class="layui-fluid" style="background-color: #D8D8D8">
+  <form class="layui-form layui-row layui-col-space16" action="" lay-filter="manage-sync-obj-filter">
+    <div class="layui-form-item">
+        <label class="layui-form-label">选择同步对象类型</label>
+        <div class="layui-input-block">
+        <input type="radio" name="objtype" value="script-dir" title="脚本目录" lay-filter="objtype-filter" checked>
+        <input type="radio" name="objtype" value="deb-repo" title="deb仓库" lay-filter="objtype-filter">
+        </div>
+        <div class="layui-input-block">
+          <input type="text" name="syncobj" value="" required placeholder="请填写脚本目录所在路径（必填）" class="layui-input" lay-affix="clear" id="ID-sync-obj">
+          <input type="text" name="description" value="" placeholder="请填写脚本目录描述（选填）" class="layui-input" lay-affix="clear" id="ID-sync-obj-description">
+        </div>     
+    </div>
+    <div class="layui-btn-container layui-col-xs5 layui-col-xs-offset5">
+      <button type="submit" class="layui-btn" lay-submit lay-filter="submit-sync-obj-filter">确定添加</button>
+    </div>  
+  </form>
+</div>
+<hr />
+<div id="ID-sync-obj-list" class="layui-row" style="background-color: #D8D8D8">
+  <div class="layui-col-xs3">
+    <h3 id="ID-sync-obj-list-title">已有同步对象</h3>
+  </div>
+  <!-- 同步对象列表 -->
+  <table id="ID-sync-obj-list-table"></table>
+</div>
+
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<script>
+  layui.use(function(){
+    let $ = layui.$;
+    let form = layui.form;
+    let util = layui.util;
+    let layer = layui.layer;
+    let dropdown = layui.dropdown;
+    let table = layui.table;
+
+    // radio 选择事件
+    form.on('radio(objtype-filter)', function(data){
+      var elem = data.elem; // 获得 radio 原始 DOM 对象
+      var value = elem.value; 
+      switch(value) {
+        case'deb-repo':
+          // 修改placeholder信息
+          $('#ID-sync-obj').attr('placeholder', '请选择deb仓库');
+          // 隐藏ID-sync-obj-description输入框
+          $('#ID-sync-obj-description').hide();
+          //获取所有deb仓库列表，并渲染到select下拉框中
+          $.ajax({
+            url: '/api/repo_api/deb_repo_manage_list/',
+            type: 'GET',
+            dataType: 'json',
+            success: function(res){
+              if(res.code == 0){
+                // 获取仓库信息列表
+                var repo_list = res.data;
+                repoinfo = [];
+                for(var i=0;i<repo_list.length;i++){
+                  repoinfo.push({title: repo_list[i].repopath +', '+repo_list[i].codename, id: i})
+                }
+                console.log(repoinfo);
+                // 渲染下拉菜单
+                dropdown.render({
+                  elem: '#ID-sync-obj',
+                  id: 'ID-sync-obj-dropdown',  //该下拉组件的id  
+                  data: repoinfo,
+                  click: function(obj, othis){
+                    this.elem.val(obj.title);
+                  },
+                  //style: 'width: 245px;',
+                  //show: true    //是否自动显示下拉
+                })
+              }else{
+                layer.msg(res.msg);  
+              }
+            },
+            error: function(res){
+              layer.msg('获取仓库列表失败');
+            }
+          });
+          break;
+        case'script-dir':
+          // 刷新页面
+          location.reload();
+          break;
+        default:
+          // code block
+      }
+    });
+    // 表单提交事件
+    form.on('submit(submit-sync-obj-filter)', function(data){
+      var field = data.field; // 获取表单字段值
+      console.log(field);
+      // 将数据提交到后台
+      $.ajax({
+        url: '/api/sync_repo_api/add_sync_obj',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(field),
+        dataType: 'json',
+        success: function(res){
+          if(res.code == 0){
+            layer.alert("添加同步内容成功！", {icon: 1}, function(index){
+              // 点击确定按钮后刷新页面
+              location.reload();
+            });
+          }else{
+            layer.alert('添加失败,'+res.msg, {icon: 2});
+          }
+        },
+        error: function(res){
+          layer.alert('添加失败,'+res.msg, {icon: 2});
+        }
+      });
+      return false; // 阻止默认 form 跳转
+    });
+    // 按钮事件
+    util.on('lay-on',{
+      'btn-syncobj-delete':function(othis){
+        layer.confirm('确认删除同步对象？', {
+          btn: ['确认', '取消'] //按钮
+        }, function(){
+            // 执行 Ajax 操作，向后端提交删除上级节点请求，JSON.stringify()可以将数据转为 JSON 格式
+            $.ajax({
+              url: '/api/sync_repo_api/delete_sync_obj',
+              type: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify({id: othis.context.dataset.id}),
+              dataType: 'json',
+              success: function(res){
+                if(res.code == 0){
+                  layer.alert("删除同步对象成功！"+res.msg, {icon: 1}, function(index){
+                    // 点击确定按钮后刷新页面
+                    location.reload();
+                  });
+                }else{
+                  layer.alert('删除同步对象失败,'+res.msg, {icon: 2});
+                }
+              },
+              error: function(res){
+                layer.alert('删除同步对象失败,'+res.msg, {icon: 2});
+              }
+            });
+        }, function(){
+          layer.msg('取消删除');
+        });
+      },
+      'btn-syncobj-git-commit':function(othis){
+        layer.confirm('确认提交修改？', {
+          btn: ['确认', '取消'] //按钮
+          }, function(){
+            // 执行 Ajax 操作，向后端提交提交git commit操作请求，JSON.stringify()可以将数据转为 JSON 格式
+            $.ajax({
+              url: '/api/sync_repo_api/git_commit',
+              type: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify({id: othis.context.dataset.id}),
+              dataType: 'json',
+              success: function(res){
+                if(res.code == 0){
+                  layer.alert("提交修改成功！"+res.msg, {icon: 1}, function(index){
+                    // 点击确定按钮后刷新页面
+                    location.reload();
+                  });
+                }else{
+                  layer.alert('提交修改失败,'+res.msg, {icon: 2});
+                }
+              },
+              error: function(res){
+                layer.alert('提交修改失败,'+res.msg, {icon: 2});
+              }
+            });
+          }, function(){
+              layer.msg('取消提交');
+          });
+      }
+    });
+    // 渲染同步对象列表
+    var sync_obj_list_table = table.render({
+      elem: '#ID-sync-obj-list-table',
+      id: 'ID-sync-obj-list-table-render',
+      data: [],
+      cols: [[
+        {field: 'objtype', title: '类型', width: 180, fixed: 'left'},
+        {field: 'rela_path', title: 'path', width: 180, fixed: 'left'},
+        {field: 'codename',title: 'codename', width: 100, fixed: 'left'},
+        {field: 'description', title: 'description', width: 200, align: 'center'},
+        {field: 'origin', title: 'origin', width: 100, align: 'center'},
+        {field: 'sn', title: 'SN', width: 50, align: 'center'},
+        {templet: syncobj_func_templet, title: '功能', width: 300, align: 'center'},
+      ]],
+    });
+    // 从后端获取同步对象列表，并渲染到表格中
+    $.ajax({
+      url: '/api/sync_repo_api/get_sync_obj_list',
+      type: 'GET',
+      dataType: 'json',
+      success: function(res){
+        if(res.code == 0){
+          table.reloadData('ID-sync-obj-list-table-render', {
+            data: res.data
+            });
+        }else{
+          layer.msg('获取同步对象列表失败,'+res.msg);
+        }
+      },
+      error: function(res){
+        layer.msg('获取同步对象列表失败,'+res.msg);
+      }
+    });
+  });
+</script>
+<script>
+// 同步对象功能模板
+function syncobj_func_templet(d){
+  // 如果是本节点管理的同步对象，则显示删除按钮，否则不显示
+  if (d.control == true) {
+    // 如果是script-dir类型，显示提交修改以及删除按钮
+    if (d.objtype =='script-dir') {
+      fun_module_html=`
+      <button id="ID-syncobj-git-commit" type="button" class="layui-btn" lay-on="btn-syncobj-git-commit" data-id="${d.id}">
+        <i class="layui-icon layui-icon-refresh-3"></i>提交修改
+      </button>
+      <button id="ID-syncobj-delete" type="button" class="layui-btn" lay-on="btn-syncobj-delete" data-id="${d.id}">
+        <i class="layui-icon layui-icon-delete"></i>删除
+      </button>
+      `
+    }
+    // 其他类型，只显示删除按钮
+    else {
+      fun_module_html=`
+      <button id="ID-syncobj-delete" type="button" class="layui-btn" lay-on="btn-syncobj-delete" data-id="${d.id}">
+        <i class="layui-icon layui-icon-delete"></i>删除
+      </button>
+      `
+    }
+  } 
+  // 不是本节点管理的同步对象，则不显示任何按钮
+  else {
+    fun_module_html=''
+  }
+  return fun_module_html;
+}
+</script>
+
+</body>
+</html>

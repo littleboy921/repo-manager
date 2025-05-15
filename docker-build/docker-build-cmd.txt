@@ -1,0 +1,12 @@
+（1）docker build -t py-deb-rpm-pip3:0.1  --network host -f Dockerfile-install-pip3 ./
+
+（2）docker build -t py-deb-rpm-gunicorn:0.1  --network host -f Dockerfile-py-deb-rpm-gunicorn ./
+
+（3）清除创建失败的none 镜像：
+	docker system prune
+	
+（4）导出镜像
+	docker image save py-deb-rpm-gunicorn:0.1 -o ./py-deb-rpm-gunicorn-v0.1.tar
+
+（5）测试镜像
+	docker run -it --rm --name test-run --network host py-deb-rpm-gunicorn:0.1 /bin/bash

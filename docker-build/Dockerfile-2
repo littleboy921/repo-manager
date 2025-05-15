@@ -1,0 +1,9 @@
+FROM py3-pip:0.1
+LABEL maintainer="zcq<zhangchiqian@uniontech.com>"
+LABEL version="0.1"
+LABEL description="debian with python3 python3-pip rpm dnf reprepro createrepo-c netcat-openbsd git gunicorn "
+RUN apt update && \
+    apt install -y rpm dnf && \
+    apt install -y reprepro createrepo-c && \
+    apt install -y netcat-openbsd && \
+    apt install -y git 

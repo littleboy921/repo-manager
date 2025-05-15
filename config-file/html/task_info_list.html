@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>task info list</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="/layui/css/layui.css">
+  <link rel="stylesheet" href="/bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    p {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+<div class="layui-container" style="background-color: #D8D8D8">
+  <!-- 写明当前task info 的接口 -->
+  <h2>task info api接口：</h2>
+  <p style="color:blue">/api/uos_api/add_task_info/</p>
+  <h2>任务列表信息</h2>
+  <button id="ID-refresh-task-info-list" type="button" class="layui-btn" lay-on="btn-refresh-task-info-list">
+    <i class="layui-icon layui-icon-refresh-3"></i>刷新
+  </button>
+  <!-- 表格渲染 -->
+  <table class="layui-table" id="ID-task_info_list_table" lay-filter="task_info_table"></table>
+</div>
+
+
+<!-- 引入 layui.js -->
+<script src="/layui/layui.js"></script>
+<!-- 引入 md5 加密函数 -->
+<script src="/js/spark-md5.js"></script>
+<!-- 文件大小格式化函数 -->
+<script>  
+  function task_info_list_fun_module(d) {
+    fun_module_html=`
+      <div class="layui-btn-container">
+        <button id="ID-delete-task-info-${d.task_name}" type="button" class="layui-btn layui-btn-danger" lay-on="btn-task-info-delete" data-taskname="${d.task_name}" 
+              <i class="layui-icon layui-icon-delete"></i>删除
+        </button>
+      </div>
+    `;
+    return fun_module_html;
+  }
+</script>
+
+<script>
+  layui.use(function(){
+      let table = layui.table;
+      let util = layui.util;
+      let form = layui.form;
+      let tips = layui.tips;
+      let layer = layui.layer;
+
+      //按钮事件
+      util.on('lay-on', {
+        'btn-task-info-delete':function(othis){
+          layer.confirm('确认删除 '+othis.context.dataset.taskname+' 信息？', {
+            btn: ['Confirm', 'Cancel'] //按钮
+          }, function(){
+            manage_task_info('delete_task_info',othis.context.dataset.taskname)
+          }, function(){
+            layer.msg('取消删除', {icon: 2});
+          });
+        },
+        'btn-refresh-task-info-list': function(othis){
+          get_table_info("/api/uos_api/get_task_info_list/",'task_info_list_table')
+        }
+      });
+
+      // 任务信息列表表格渲染
+      var task_info_list_table=table.render({
+          elem:"#ID-task_info_list_table",
+          id:"task_info_list_table",
+          page: {
+            limit: 20, // 默认每页显示的条数
+            limits: [20, 50, 100,1000], // 自定义分页条数选项
+          },
+          skin: 'line',
+          size: 'md',
+          data: [],
+          cols:[[
+              {
+                  title:'Task Name',
+                  width:150,
+                  //field:'task_name',
+                  templet: function(d){
+                      return '<a href="/task_info.html?task_name='+encodeURIComponent(d.task_name)+'">'+d.task_name+'</a>';
+                  }
+              },
+              {
+                  title:'Create Time',
+                  width:200,
+                  field:'create_at',
+              },
+              {
+                  title:'Last Update Time',
+                  width:200,
+                  field:'last_update',
+              }, 
+              {
+                  title:'Total Records',
+                  width:150,
+                  field:'total_rec_num',
+              },               
+              {
+                  title:'功能模块',
+                  width:150,
+                  templet: task_info_list_fun_module
+              },
+          ]]
+      });   
+    
+    // 向后端发送请求，获取信息列表并刷新页面表格
+    get_table_info("/api/uos_api/get_task_info_list/",'task_info_list_table')
+      
+    // 仓库管理操作函数，修改仓库管理yml配置
+    function manage_task_info(method,task_name) {
+      var xmlhttp;
+      let loadIndex;
+      // 处理目录名以及文件名中可能存在的特殊字符
+      var task_name_html = encodeURIComponent(task_name);
+
+      if (window.XMLHttpRequest)
+      {
+        // IE7+, Firefox, Chrome, Opera, Safari 浏览器执行代码
+        xmlhttp=new XMLHttpRequest();
+      }
+      else
+      {
+        // IE6, IE5 浏览器执行代码
+        xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+      }
+      // 向服务器发送异步请求，获取code为0回复后刷新表格
+      xmlhttp.onreadystatechange=function()
+      {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) {
+          var res_json = JSON.parse(this.responseText);
+          console.log(res_json);
+          if(res_json.code == 0){ // 成功提示
+            layer.msg(util.escape(res_json.msg),{
+              title: ['Success', 'font-size: 18px;color: white'],
+              time: 0,  //不自动关闭
+              btn: ['确定'], 
+            }); // 显示返回的提示信息
+            // 刷新表格数据
+            get_table_info("/api/uos_api/get_task_info_list/",'task_info_list_table')
+          }else{ // 出错提示
+              layer.msg(res_json.msg,{
+                title: ['Failed', 'font-size: 18px;color: white'],
+                time: 0,  //不自动关闭
+                btn: ['确定'],
+              }
+            ); // 显示返回的提示信息
+          }
+        }
+        layer.close(loadIndex)  // 关闭加载等待提示框
+      }
+      xmlhttp.onloadstart=function(){
+        // 显示加载等待提示框
+        loadIndex = layer.msg('请稍候...', {
+          icon: 16,
+          shade: 0.01,
+          time: 0,  //不自动关闭
+        });      
+      }
+      switch(method) {
+        case 'delete_task_info':
+          xmlhttp.open("GET","/api/uos_api/del_task_info/?task_name="+task_name_html,true);
+          break;
+        default:
+          // code block
+      }
+      xmlhttp.send();
+    }
+  });
+</script>
+<script>
+  // 向后端发送请求，获取信息列表并刷新页面表格
+  function get_table_info(api_url,table_render_id) {
+    let $ = layui.$;
+    let table = layui.table;
+    $.ajax({
+      type: "get",
+      url: api_url,
+      dataType: "json",
+      async:  true,
+      success: function(res) {
+        table.reloadData(
+          table_render_id,
+          {
+            data: res.data,
+            scrollPos: 'fixed'
+          }
+        )
+      },
+      error: function(jqXHR){
+        console.log(jqXHR.status);
+        console.log(jqXHR.responseText);
+      }
+    })
+  }
+</script>
+
+<script>
+// tips 鼠标悬停提示
+function show_tips(msg, id) {
+    layer.tips(msg, '#' + id, { tips: [2, 'black'],time: 0 });
+}
+function close_tips() {
+    layer.closeAll('tips');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>文件内容展示</title>
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <!-- 引入自定义icon样式 -->
+  <link rel="stylesheet" href="layui/ext-icon/iconfont.css"> 
+</head>
+<body>
+  <pre id="ID-code-demo" class="layui-code code-demo" lay-options="{theme: 'light'}">
+  </pre>
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<script>
+layui.use(function(){
+    let layer = layui.layer;
+    let code = layui.code;
+    // 获取当前页面url
+    let url = layui.url();
+    // 获取当前url中参数
+    var file_path = decodeURIComponent(url['search']['path']);
+    var is_logfile = decodeURIComponent(url['search']['is_logfile']);
+    let $ = layui.$;
+      $.ajax({
+          url: "/api/repo_api/file_contents/?path="+file_path+"&is_logfile="+is_logfile,
+          type: "GET",
+          //dataType: "json",
+          success: function(res) {
+            //console.log(data);
+            //var formattedContent = data.replace(/\n/g, "<br>");
+            document.getElementById("ID-code-demo").innerHTML = res;
+            const search = "<title>Error Page</title>";
+            var result = res.includes(search);
+            if(result){
+              layer.msg("获取文件内容失败!"+res.msg, {icon: 2});
+            }else{
+              
+            }
+          },
+          error: function(xhr, status, error) {
+            console.log(xhr.status);
+            console.log(status);
+            console.log(error);
+            layer.msg("获取文件内容失败!"+error, {icon: 2, time: 2000});
+          }
+      });
+    });
+</script>
+
+</body>
+</html>

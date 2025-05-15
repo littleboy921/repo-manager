@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>task info list</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="/layui/css/layui.css">
+  <link rel="stylesheet" href="/bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    p {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 20px;
+    }
+    hr {
+       border: 0;
+       height: 1px;
+       margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+<!-- 编辑本级节点信息 -->
+<form class="layui-form layui-form-pane layui-row" lay-filter="repo-conf-val-filter" style="background-color: #D8D8D8">
+    <h2 style="text-align: center; margin-top: 32px;">填入仓库路径</h2>
+    <div class="layui-form-item">
+      <div class="layui-col-md8">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+            仓库路径：
+          </div>
+          <input type="text" name="repopath" lay-verify="required" lay-reqtext="必填" autocomplete="off" class="layui-input" id="ID-repopath"><span style='color:rgb(255, 0, 0)'> *</span>
+        </div>
+      </div>
+    </div>    
+    <h2 style="text-align: center; margin-top: 32px;">填入distributions配置</h2>
+    <div class="layui-form-item">
+      <div class="layui-col-md4">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+            Codename
+          </div>
+          <input type="text" name="dist-codename" lay-verify="required" autocomplete="off" class="layui-input" id="ID-dist-codename"><span style='color:rgb(255, 0, 0)'> *</span>
+        </div>
+      </div>
+    </div>   
+    <div class="layui-form-item">
+      <div class="layui-col-md4">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+            Update
+          </div>
+          <input type="text" name="dist-update" autocomplete="off" class="layui-input" id="ID-dist-update" lay-on="dist-update-input">
+        </div>
+      </div>
+    </div> 
+    <div class="layui-form-item">
+      <div class="layui-col-md4">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix"  style="color:white; background-color: #16baaa;">
+            Architectures
+          </div>
+          <input type="text" name="dist-architectures" lay-verify="required" autocomplete="off" class="layui-input" id="ID-dist-architectures"><span style='color:rgb(255, 0, 0)'> *</span>
+        </div>
+      </div>
+    </div> 
+    <div class="layui-form-item">
+      <div class="layui-col-md4">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+            Components
+          </div>
+          <input type="text" name="self-auth-code" lay-verify="required" autocomplete="off" class="layui-input" id="ID-dist-components"><span style='color:rgb(255, 0, 0)'> *</span>
+        </div>
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-col-md4">
+        <div class="layui-input-group">
+          <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+            Description
+          </div>
+          <input type="text" name="self-auth-code" lay-verify="required" autocomplete="off" class="layui-input" id="ID-dist-description">
+        </div>
+      </div>
+    </div>
+    <h2 style="text-align: center; margin-top: 32px;">填入updates配置</h2>
+    <div class="layui-form-item">
+      <div class="layui-input-group">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          Name
+        </div>
+        <input type="text" name="update-name" readonly autocomplete="off" class="layui-input" id="ID-update-name">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-input-group">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          Suite
+        </div>
+        <input type="text" name="update-suite" autocomplete="off" class="layui-input" id="ID-update-suite">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-input-group">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          Architectures
+        </div>
+        <input type="text" name="update-architechtures" autocomplete="off" class="layui-input" id="ID-update-architectures">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-input-group">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          Components
+        </div>
+        <input type="text" name="update-components" autocomplete="off" class="layui-input" id="ID-update-components">
+      </div>
+    </div>
+    <div class="layui-form-item">
+      <div class="layui-input-group">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          Method
+        </div>
+        <input type="text" name="update-method" autocomplete="off" class="layui-input" id="ID-update-method">
+      </div>
+    </div>   
+  </form>
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<script>
+  layui.use(function(){
+      let table = layui.table;
+      let util = layui.util;
+      let form = layui.form;
+      let tips = layui.tips;
+      let layer = layui.layer;
+      let $ = layui.$;
+      // 监听提交
+      util.on('lay-on',{
+        'dist-update-input':function(othis){
+          form.val('repo-conf-val-filter',{
+            'update-name': form.val('repo-conf-val-filter')['dist-update']
+          })
+        }
+        },{
+          trigger: 'input'
+        });
+      })
+      
+      
+</script>
+</body>
+</html>

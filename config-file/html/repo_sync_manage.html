@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>task info list</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="/layui/css/layui.css">
+  <link rel="stylesheet" href="/bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    p {
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 20px;
+    }
+    hr {
+       border: 0;
+       height: 1px;
+       margin: 20px 0;
+    }
+  </style>
+</head>
+
+<body>
+<!-- 编辑本级节点信息 -->
+<form class="layui-form layui-form-pane layui-row" lay-filter="self-val-filter" style="background-color: #D8D8D8">
+  <h2 style="text-align: center; margin-top: 32px;">本级节点信息</h2>
+  <div class="layui-form-item">
+    <div class="layui-col-md4">
+      <div class="layui-input-group" id="ID-self-address">
+        <div class="layui-input-prefix" style="width: 180px;color:white; background-color: #16baaa;">
+          本级节点对外address：
+        </div>
+        <input type="text" name="self-address" placeholder="示例：10.1.1.1"  readonly  lay-verify="required" class="layui-input">
+      </div>
+      <div class="layui-input-group" id="ID-self-api-port">
+        <div class="layui-input-prefix" style="width: 180px;color:white; background-color: #16baaa;">
+          api-port
+        </div>
+        <input type="text" name="self-api-port" placeholder="示例：8000"  readonly  lay-verify="required" class="layui-input">
+      </div>
+      <div class="layui-input-group" id="ID-self-repo-port">
+        <div class="layui-input-prefix" style="width: 180px;color:white; background-color: #16baaa;">
+          repo-port:
+        </div>
+        <input type="text" name="self-repo-port" placeholder="示例：8888"  readonly  lay-verify="required" class="layui-input">
+      </div>
+    </div>
+  </div>   
+  <div class="layui-form-item">
+    <div class="layui-col-md4">
+      <div class="layui-input-group" id="ID-self-name">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          本级节点名称：
+        </div>
+        <input type="text" name="self-name" placeholder="请输入本节点名称"  readonly  lay-verify="required" class="layui-input">
+      </div>
+    </div>
+  </div> 
+  <div class="layui-form-item">
+    <div class="layui-col-md4">
+      <div class="layui-input-group" id="ID-self-description">
+        <div class="layui-input-prefix"  style="color:white; background-color: #16baaa;">
+          本级节点描述：
+        </div>
+        <input type="text" name="self-description" placeholder="请输入描述信息" readonly class="layui-input">
+      </div>
+    </div>
+  </div> 
+  <div class="layui-form-item">
+    <div class="layui-col-md4">
+      <div class="layui-input-group" id="ID-self-auth-code">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          本节点验证码：
+        </div>
+        <input type="text" name="self-auth-code" readonly class="layui-input">
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md2 layui-col-md-offset4"> 
+    <button id="ID-edit-self" type="button" class="layui-btn" >编辑</button>
+    <button id="ID-confirm-edit-self"  type="button" class="layui-btn" >确认</button>  
+  </div>
+</form>
+<hr />
+<!-- 添加父节点 -->
+<form class="layui-form layui-form-pane layui-row" id="ID-add-parent" style="background-color: #D8D8D8">
+  <h2 style="text-align: center; margin-top: 32px;">添加父节点</h2>
+  <p id="ID-add-parent-tips" style="color:rgb(255, 0, 0)"></p>  
+  <div class="layui-form-item">
+    <div class="layui-col-md8">
+      <div class="layui-input-group" id="ID-parent-address">
+        <div class="layui-input-prefix" style="width: 180px;color:white; background-color: #16baaa;">
+          父节点address：
+        </div>
+        <input type="text" placeholder="示例：10.1.1.1" name="parent-address" lay-affix="clear" lay-verify="required" class="layui-input">
+        <div class="layui-input-suffix" style="color:rgb(255, 0, 0);text-align: center;">
+          *
+        </div>
+      </div>
+      <div class="layui-input-group" id="ID-parent-api-port">
+        <div class="layui-input-prefix" style="width: 180px;color:white; background-color: #16baaa;">
+          父节点api-port：
+        </div>
+        <input type="text" placeholder="示例：8888" name="parent-api-port" lay-affix="clear" lay-verify="required" class="layui-input">
+        <div class="layui-input-suffix" style="color:rgb(255, 0, 0);text-align: center;">
+          *
+        </div>
+      </div>
+    </div>
+  </div>  
+  <div class="layui-form-item">    
+    <div class="layui-col-md4">
+      <div class="layui-input-group" id="ID-parent-auth-code">
+        <div class="layui-input-prefix" style="color:white; background-color: #16baaa;">
+          验证码：
+        </div>
+        <input type="text" placeholder="询问父节点管理员获取" name="parent-auth-code" lay-affix="clear" lay-verify="required" class="layui-input">
+        <div class="layui-input-suffix" style="color:rgb(255, 0, 0)">
+          *
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-col-md2 layui-col-md-offset4"> 
+    <button id="ID-add-parent-submit" type="submit" class="layui-btn" lay-submit lay-filter="add-parent-submit">确认</button>
+  </div>
+</form>
+
+<hr />
+<!-- 父节点信息 -->
+<div id="ID-parent-info" class="layui-row" style="background-color: #D8D8D8">
+  <div class="layui-col-xs12">
+    <h2 id="ID-parent-info-title" style="text-align: center; margin-top: 32px;">父节点信息</h2>
+  </div>
+  <table id="ID-parent-info-table" lay-filter="parent-info-table-filter"></table>
+</div>
+
+
+<hr />
+
+<table  id="ID-treeTable-sync-info"></table>
+
+
+<!-- 引入 layui.js -->
+<script src="/layui/layui.js"></script>
+<!-- 引入 md5 加密函数 -->
+<script src="/js/spark-md5.js"></script>
+<script>
+// 全局变量
+let self_children_list
+let parent_info_dict
+layui.use(function(){
+    let treeTable = layui.treeTable;
+    let table = layui.table;
+    let util = layui.util;
+    let form = layui.form;
+    let tips = layui.tips;
+    let layer = layui.layer;
+    let $ = layui.$;
+    // 获取本级节点信息，以及父节点信息，并渲染相关页面元素
+    function get_self_node_info_load_table(){
+      $.ajax({
+        url:'/api/sync_repo_api/get_self_node_info',
+        type:'GET',
+        dataType: 'json',
+        success: function(res){
+          if(res.code == 0){
+            var data = res.data;
+            //console.log(data)
+            self_info = data.self_info_dict;  //这里修改全局变量self_info
+            parent_info_dict = data.parent_info_dict;
+            // 如果本级节点部分信息为空，则提示用户填写完整
+            if (self_info['address'] === null || self_info['name'] === null || self_info['description'] === null) {
+              $('#ID-add-parent-tips').text('注意：请先填写本级节点信息，再添加父节点！');
+              $('#ID-self-address').append("<span style='color:rgb(255, 0, 0)'>* </span>")
+              $('#ID-self-name').append("<span style='color:rgb(255, 0, 0)'>* </span>")
+              $('#ID-self-description').append("<span style='color:rgb(255, 0, 0)'>* </span>")
+            }
+            if (self_info['id'] == null){
+              layer.alert("异常：本级节点id信息为空！", {icon: 2});
+            }
+            form.val('self-val-filter', {
+              "self-address": self_info['address'],
+              "self-api-port": self_info['api_port'],
+              "self-repo-port": self_info['repo_port'],
+              "self-name": self_info['name'],
+              "self-description": self_info['description'],
+              "self-auth-code": self_info['auth_code'],
+            });
+            // 如果已有父节点信息，则隐藏添加父节点表单，并渲染父节点信息表格
+            if ( parent_info_dict ) {  
+              // 隐藏添加父节点表单
+              $('#ID-add-parent').hide()
+              // 父节点信息表格渲染
+              table.reloadData('ID-parent-info-table-render', {
+                data: [{
+                  parent_name: parent_info_dict['name'],
+                  parent_address: parent_info_dict['address'],
+                  parent_api_port: parent_info_dict['api_port'],
+                  parent_repo_port: parent_info_dict['repo_port'],
+                  parent_description: parent_info_dict['description'],
+                  online: parent_info_dict['online'],
+                  editable: true
+                }],
+                scrollPos: 'fixed'
+              });
+            }else{
+              // 如果不存在父节点信息，则隐藏父节点信息表格
+              $('#ID-parent-info').hide()
+            }
+          }else{
+            layer.msg(res.msg);
+          }
+        },
+        error: function(res){
+          layer.msg('获取本级节点信息失败');
+        }
+      });
+    }
+    get_self_node_info_load_table();
+
+    // 默认隐藏确定按钮
+    $('#ID-confirm-edit-self').hide()
+
+    // 编辑本级节点信息，点击按钮后，将表单项设置为可编辑状态，并显示确定按钮；将添加父节点确认键disable掉，防止还未确认本级节点信息就添加父节点
+    $('#ID-edit-self').on('click', function(){
+      $("input[name='self-address']").removeAttr("readonly");
+      $("input[name='self-api-port']").removeAttr("readonly");
+      $("input[name='self-repo-port']").removeAttr("readonly");
+      // 如果存在父节点信息，则必需确保父节点在线，因为修改节点名称时，需要向父节点进行确认无重名
+      if (parent_info_dict) {
+        if (parent_info_dict['online'] == 0) {  //如果父节点不在线
+          layer.alert("与父节点连接失败，请确认后再修改本级节点信息！", {icon: 2});
+          return false;
+        }else{  //如果父节点在线，则允许修改本级节点信息
+          $("input[name='self-name']").removeAttr("readonly");
+        }
+      }else{  //如果不存在父节点信息，则允许修改本级节点信息
+        $("input[name='self-name']").removeAttr("readonly");
+      }
+      $("input[name='self-description']").removeAttr("readonly");
+      // 显示确认按钮
+      $('#ID-confirm-edit-self').show()
+      $('#ID-add-parent-submit').addClass('layui-btn-disabled').attr('disabled',true) // 禁用添加父节点确认键
+    });
+
+    // 确认编辑本级节点信息,提交表单信息到后端，点击按钮后，将表单项设置为不可编辑状态
+    $('#ID-confirm-edit-self').on('click', function(){
+      form.submit('self-val-filter',function(data){
+        var field = data.field;
+        $.ajax({
+          url:'/api/sync_repo_api/update_self_node_info',
+          type:'POST',
+          contentType: 'application/json',
+          data: JSON.stringify(field),
+          success:function(res){
+            if(res.code === 0){
+              layer.msg("编辑本级节点信息成功！"+res.msg, {icon: 1});
+              // 表单项设置为不可编辑状态
+              $("input[name='self-address']").attr("readonly",'');
+              $("input[name='self-api-port']").attr("readonly",'');
+              $("input[name='self-repo-port']").attr("readonly",'');
+              $("input[name='self-name']").attr("readonly",'');
+              $("input[name='self-description']").attr("readonly",'');
+              //隐藏确认提交按钮
+              $('#ID-confirm-edit-self').hide()
+              // 恢复添加父节点确认键
+              $('#ID-add-parent-submit').removeClass('layui-btn-disabled').removeAttr('disabled') 
+              //重新渲染树形表格
+              get_repo_sync_info('/api/sync_repo_api/get_repo_sync_info', 'ID-treetbl-render');
+            }else{
+              layer.alert("编辑本级节点信息失败！服务端返回错误信息："+res.msg, {icon: 2});
+            }
+          },
+          error:function(err){
+            //console.log(err)
+            layer.alert("编辑本级节点信息失败！"+err.responseJSON.msg, {icon: 2});
+          }
+        });
+      })
+    });
+
+    // 删除父节点按钮功能
+    util.on('lay-on',{
+      'btn-parent-delete': function(othis){
+        layer.confirm('确认删除父节点？', {
+          btn: ['确认', '取消'] //按钮
+        }, function(){
+          // 执行 Ajax 操作，向后端提交删除父节点请求，JSON.stringify()可以将数据转为 JSON 格式
+          $.ajax({
+            url:'/api/sync_repo_api/delete_parent_node',
+            type:'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+              'delete_mode': othis.context.dataset.mode,
+            }),
+            success:function(res){
+              if(res.code === 0){
+                layer.alert("删除父节点成功！"+res.msg, {icon: 1}, function(index){
+                  // 刷新页面
+                  location.reload();
+                });
+              }else{
+                layer.alert("删除父节点失败！"+res.msg, {icon: 2});
+              }
+            },
+            error:function(err){
+              layer.alert("删除父节点失败！(api接口请求失败)"+err.responseJSON.msg, {icon: 2});
+            }
+          });
+          }, function(){
+            layer.msg('已取消');
+          }
+        );
+      },
+      // 删除子节点按钮功能
+      'btn-node-delete': function(othis){
+        layer.confirm('确认删除该节点？', {
+          btn: ['确认', '取消'] //按钮
+        }, function(){
+          // 执行 Ajax 操作，向后端提交删除节点请求，JSON.stringify()可以将数据转为 JSON 格式
+          $.ajax({
+            url:'/api/sync_repo_api/delete_child_node',
+            type:'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+              'id': othis.context.dataset.id,
+              'auth_code': othis.context.dataset.authcode,
+            }),
+            success:function(res){
+              if(res.code === 0){
+                layer.alert("删除子节点成功！"+res.msg, {icon: 1}, function(index){
+                  // 刷新页面
+                  location.reload();
+                });
+              }else{
+                layer.alert("删除节点失败！"+res.msg, {icon: 2});
+              }
+            },
+            error:function(err){
+              layer.alert("删除节点失败！(api接口请求失败)"+err.responseJSON.msg, {icon: 2});
+            }
+          });
+          }, function(){
+            layer.msg('已取消');
+          }
+        );
+      },        
+    });
+
+    // 表单提交，添加父节点
+    form.on('submit(add-parent-submit)', function(data){
+      // 验证是否已编辑本级节点信息，若未编辑，则提示编辑，不允许添加父节点
+      var form_self_info_dict = form.val('self-val-filter'); // 获取本级节点信息
+      // 如果本级节点信息尚未填写则阻止提交
+      if(form_self_info_dict['self-name'] == null || form_self_info_dict['self-address'] == null || form_self_info_dict['self-description'] == null || form_self_info_dict['self-name'] == '' || form_self_info_dict['self-address'] == '' ||form_self_info_dict['self-description'] == ''){
+        layer.alert("请先填写本级节点信息，再添加父节点！", {icon: 2});
+        return false;
+      }
+      var field = data.field; // 获取表单全部字段值
+      // 执行 Ajax 操作，向后端提交添加父节点请求，JSON.stringify()可以将数据转为 JSON 格式
+      $.ajax({
+        url:'/api/sync_repo_api/add_parent_node',
+        type:'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(field),
+        success:function(res){
+          if(res.code === 0){
+            layer.alert("添加父节点成功！"+res.msg, {icon: 1}, function(index){
+              // 点击确定后
+              // 刷新页面
+              location.reload();
+            });
+          }else{
+            layer.alert("添加父节点失败！"+res.msg, {icon: 2});
+          }
+        },
+        error:function(err){
+          layer.alert("添加父节点失败！(api接口请求失败)"+err.responseJSON.msg, {icon: 2});
+        }
+      });
+      return false; // 阻止默认 form 跳转
+    });
+
+    // 父节点信息表格渲染
+    // 根据返回数据中某个字段来判断开启该行的编辑
+    var editable = function(d){
+      if(d.editable) return 'text'; // 这里假设以记录的editable字段为判断依据，如果该字段为true，则该行可编辑
+    };
+    var parent_info_table = table.render({
+      elem: '#ID-parent-info-table',
+      id: 'ID-parent-info-table-render',
+      data: [],
+      css: [
+      // 对开启了编辑的单元格追加样式(浅绿色)
+      '.layui-table-view td[data-edit]{color: #16B777;}'
+      ].join(''),
+      cols: [[
+        {field: 'parent_name', title: '父节点名称', width: 180, fixed: 'left'},
+        {field: 'parent_description', title: '描述', width: 200,align: 'center'},
+        {field: 'parent_address', title: '父节点address', width: 180, edit: editable},
+        {field: 'parent_api_port', title: '父节点api-port', width: 100, edit: editable},
+        {field: 'parent_repo_port', title: '父节点repo-port', width: 100,edit: editable},
+        {templet: online_templet, title: '连接状态', width: 100,align: 'center'},
+        {templet: parent_func_templet, title: '功能',fixed: 'right'},
+      ]],
+    });
+
+    // 单元格编辑后的事件
+    table.on('edit(parent-info-table-filter)', function(obj){
+      var field = obj.field; // 得到修改的字段
+      var value = obj.value // 得到修改后的值
+      var oldValue = obj.oldValue // 得到修改前的值
+      //console.log(field, value, oldValue)
+      // 测试提示
+      //layer.msg(' 字段更改值为：'+ util.escape(value));
+      // 弹出提示，确认是否要提交修改
+      layer.confirm("是否将"+field+"修改为："+util.escape(value),
+        function(index){  // 点击确认后触发的事件
+          var post_data={}
+          post_data[field] = value
+          $.ajax({
+            url:'/api/sync_repo_api/update_parent_node_info',
+            type:'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(post_data),
+            success:function(res){
+              if(res.code === 0){
+                layer.alert(field+"信息修改成功！"+res.msg, {icon: 1},function(index){
+                  // 刷新表格数据
+                  get_self_node_info_load_table();
+                  // 关闭提示框
+                  layer.close(index);
+                });
+              }else{
+                layer.alert(field+"信息修改失败！"+res.msg, {icon: 2},function(index){
+                  // 刷新表格数据
+                  get_self_node_info_load_table();
+                  // 关闭提示框
+                  layer.close(index);
+                });            
+              }
+            },
+            error:function(err){
+              layer.alert("修改"+field+"信息失败！(后端校验失败)"+err.responseJSON.msg, {icon: 2},function(index){
+                  // 刷新表格数据
+                  get_self_node_info_load_table();
+                  // 关闭提示框
+                  layer.close(index);
+              });
+            }
+          });
+        },function(index){    // 点击取消后触发的事件
+          // 刷新表格数据
+          get_self_node_info_load_table();
+          // 关闭提示框
+          layer.close(index);
+      });  
+    });
+
+    // 同步关系树形表格渲染
+    var treetbl_inst = treeTable.render({
+        elem: '#ID-treeTable-sync-info',
+        id: 'ID-treetbl-render',
+        page: {
+          limit: 20, // 默认每页显示的条数
+          limits: [20, 50, 100,1000], // 自定义分页条数选项
+        },
+        tree: {
+          data:{
+            isSimpleData: true,
+            cascade: 'none'
+          },
+          view:{
+            expandAllDefault: true
+          }
+        },
+        maxHeight: '501px',
+        cols: [[
+          //{type: 'checkbox', fixed: 'left'},
+          //{field: 'id', title: 'ID', width: 180, sort: true, fixed: 'left'},
+          {field: 'name', title: '节点名', width: 180, fixed: 'left'},    // 注意：name这个字段为树形表必带字段，无此字段无法显示树形结构
+          {field: 'description', title: '节点描述', width: 180},
+          {field: 'join_time', title: '加入时间', width: 180},
+          {field: 'remote_ip', title: 'remote ip', width: 100},
+          {templet: online_templet, title: "在线状态", width: 100,align: 'center'},
+          {templet: syncstatus_templet, title: "同步状态", width: 100,align: 'center'},
+          {field: "last_online_time", title: "最后在线时间", width: 180},
+          {templet: node_func_templet, title: '功能', width: 180}
+        ]],
+    });
+    // 从后端获取信息，并渲染树型表格
+    get_repo_sync_info('/api/sync_repo_api/get_repo_sync_info', 'ID-treetbl-render');
+    // 周期刷新同步关系树型表格
+    var timer_reload_treetbl = setInterval(get_repo_sync_info,5000, '/api/sync_repo_api/get_repo_sync_info', 'ID-treetbl-render');
+    // 周期性刷新父节点信息
+    var timer_reload_parent_node_info = setInterval(render_parent_info_table,5000,'/api/sync_repo_api/get_self_node_info','ID-parent-info-table-render');
+});
+</script>
+<script>
+  // 获取本节点信息，渲染父节点信息表格函数
+  function render_parent_info_table(api_url,table_render_id){
+    let $ = layui.$;
+    let table = layui.table;
+    $.ajax({
+      type: "GET",
+      url: api_url,
+      type: "get",
+      dataType: 'json',
+      success: function(res){  
+        // 请求返回码为0
+        if(res.code == 0){
+          var data = res.data; 
+          parent_info_dict = data.parent_info_dict;
+          // 如果已有父节点信息，则渲染父节点信息表格
+          if ( parent_info_dict ) {  
+            // 父节点信息表格渲染
+            table.reloadData(table_render_id, {
+              data: [{
+                parent_name: parent_info_dict['name'],
+                parent_address: parent_info_dict['address'],
+                parent_api_port: parent_info_dict['api_port'],
+                parent_repo_port: parent_info_dict['repo_port'],
+                parent_description: parent_info_dict['description'],
+                online: parent_info_dict['online'],
+                editable: true
+              }],
+              scrollPos: 'fixed'
+            });
+          }
+        }
+        // 请求返回码不为0
+        else{
+          layer.msg(res.msg);          
+        }
+      },
+      error: function(res){
+        layer.msg('获取本级节点信息失败');
+      }
+    });        
+  }
+  // 获取同步信息，渲染树型表格函数
+  function get_repo_sync_info(api_url,table_render_id) {
+    let $ = layui.$;
+    let treeTable = layui.treeTable;
+    $.ajax({
+      type: "GET",
+      url: api_url,
+      dataType: "json",
+      async:  true,
+      success: function(res) {
+        // 将本节点子节点列表保存到全局变量中，后端返回的data中第一个元素即为本节点信息
+        self_children_list = res.data[0]['children']
+        //console.log(res.data)
+        treeTable.reloadData(
+          table_render_id,
+          {
+            data: res.data,
+            scrollPos: 'fixed'
+          }
+        )
+      },
+      error: function(jqXHR){
+        layer.alert("获取同步信息失败"+jqXHR.status+jqXHR.responseText, {icon: 2});
+      }
+    })
+  }
+  // 父节点功能按钮模板
+  function parent_func_templet(d){
+    if (parent_info_dict['online'] == 0) {  //如果父节点不在线
+      fun_module_html=`
+      <button id="ID-parent-delete" type="button" class="layui-btn" lay-on="btn-parent-delete" data-mode=0>
+        <i class="layui-icon layui-icon-delete"></i>删除
+      </button>
+      <button id="ID-parent-force-delete" type="button" class="layui-btn" lay-on="btn-parent-delete" data-mode=1>
+        <i class="layui-icon layui-icon-delete"></i>强制删除
+      </button>
+      `
+    }else{
+      fun_module_html=`
+      <button id="ID-parent-delete" type="button" class="layui-btn" lay-on="btn-parent-delete" data-mode=0>
+        <i class="layui-icon layui-icon-delete"></i>删除
+      </button>
+      `
+    }
+    return fun_module_html;
+  }
+  // 节点功能按钮模板
+  function node_func_templet(d){
+    // 判断节点是否为本级节点子节点，如果是，则显示删除按钮
+    if (self_children_list.includes(d.id)) {
+      fun_module_html=`
+      <button id="ID-node-delete" type="button" class="layui-btn" lay-on="btn-node-delete" data-id="${d.id}" data-authcode="${d.parent_auth_code}">
+        <i class="layui-icon layui-icon-delete"></i>删除
+      </button>
+      `
+    }else{
+      fun_module_html='';
+    }
+    return fun_module_html;
+  }
+  // 在线状态显示模板
+  function online_templet(d){
+    // 判断节点是否在线，显示不同icon颜色
+    if (d.online == 1) {
+      // 绿色
+      online_templet=`
+        <i class="layui-icon layui-icon-circle-dot" style="color: #23ff0f;"></i> 
+      `
+    }else{
+      // 红色
+      online_templet=`
+        <i class="layui-icon layui-icon-circle-dot" style="color: #fe0000;"></i> 
+      `
+    }
+    return online_templet;
+  }
+  // 同步状态显示模板
+  function syncstatus_templet(d){
+    // 判断节点是否在线，显示不同icon颜色
+    if (d.sync_status == 1) {
+      // 绿色
+      syncstatus_templet=`
+        <i class="layui-icon layui-icon-circle-dot" style="color: #23ff0f;"></i> 
+      `
+    }else if (d.sync_status == 0){
+      // 红色
+      syncstatus_templet=`
+        <i class="layui-icon layui-icon-circle-dot" style="color: #fe0000;"></i> 
+      `
+    }else{
+      // 灰色
+      syncstatus_templet=`
+        <i class="layui-icon layui-icon-circle-dot" style="color: #ccc;"></i> 
+      `
+    }
+    return syncstatus_templet;
+  }
+</script>
+</body>
+</html>

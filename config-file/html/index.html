@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <title>首页</title>
+  <link rel="stylesheet" href="layui/css/layui.css">
+</head>
+<body>
+<div class="layui-container" style="background-color: beige">
+    <div class="layui-tab layui-tab-card site-demo-button" style="position: relative;">
+        <!-- 侧边导航 请参考：https://segmentfault.com/a/1190000014617129 -->
+        <ul class="layui-nav layui-nav-tree layui-nav-side">
+            <li class="layui-nav-item layui-nav-itemed">
+                <a href="javascript:;">仓库管理</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" data-url="file-manager.html?path=" class="site-demo-active" data-type="tabAdd" data-id="1-1"   data-title="文件管理">文件管理</a></dd> 
+                    <dd><a href="javascript:;" data-url="deb-repo-manager-list.html" class="site-demo-active" data-type="tabAdd" data-id="1-2"   data-title="deb仓库管理">deb仓库管理</a></dd>
+                    <dd><a href="javascript:;">rpm仓库管理</a></dd>
+                </dl>
+            </li>
+            <li class="layui-nav-item layui-nav-itemed">
+                <a href="javascript:;">api管理</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" data-url="task_info_list.html" class="site-demo-active" data-type="tabAdd" data-id="2-1"   data-title="task_info">task_info</a></dd>
+                </dl>
+            </li>
+            <li class="layui-nav-item layui-nav-itemed">
+                <a href="javascript:;">级联同步功能</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" data-url="repo_sync_manage.html" class="site-demo-active" data-type="tabAdd" data-id="3-1"   data-title="管理同步关系">管理同步关系</a></dd>
+                    <dd><a href="javascript:;" data-url="sync_obj_manage.html" class="site-demo-active" data-type="tabAdd" data-id="3-2"   data-title="管理同步内容">管理同步内容</a></dd>
+                </dl>
+            </li>
+            <li class="layui-nav-item layui-nav-itemed">
+                <a href="javascript:;">日志管理</a>
+                <dl class="layui-nav-child">
+                    <dd><a href="javascript:;" data-url="system_log_view.html" class="site-demo-active" data-type="tabAdd" data-id="4-1"   data-title="日志查看">日志查看</a></dd>
+                </dl>
+            </li>
+        </ul>
+
+        <!--tab标签-->
+        <div class="layui-tab  layui-tab-brief" lay-filter="filter-my-tab" lay-allowclose="true" style="margin-left: 100px;">
+            <ul class="layui-tab-title"></ul>
+            <div class="layui-tab-content"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 引入 layui -->
+<script src="layui/layui.js"></script>
+<!-- 与左侧菜单联动的javascript代码-->
+<script>
+    layui.use(['element', 'layer', 'jquery'], function () {
+        var element = layui.element;
+        var $ = layui.$;
+        // 配置tab实践在下面无法获取到菜单元素
+        $('.site-demo-active').on('click', function () {
+            var dataid = $(this);
+            //这时会判断右侧.layui-tab-title属性下的有lay-id属性的li的数目，即已经打开的tab项数目
+            if ($(".layui-tab-title li[lay-id]").length <= 0) {
+                //如果比零小，则直接打开新的tab项
+                active.tabAdd(dataid.attr("data-url"), dataid.attr("data-id"), dataid.attr("data-title"));
+            } else {
+                //否则判断该tab项是否以及存在
+                var isData = false; //初始化一个标志，为false说明未打开该tab项 为true则说明已有
+                $.each($(".layui-tab-title li[lay-id]"), function () {
+                    //如果点击左侧菜单栏所传入的id 在右侧tab项中的lay-id属性可以找到，则说明该tab项已经打开
+                    if ($(this).attr("lay-id") == dataid.attr("data-id")) {
+                        isData = true;
+                    }
+                })
+                if (isData == false) {
+                    //标志为false 新增一个tab项
+                    active.tabAdd(dataid.attr("data-url"), dataid.attr("data-id"), dataid.attr("data-title"));
+                }
+            }
+            //最后不管是否新增tab，最后都转到要打开的选项页面上
+            active.tabChange(dataid.attr("data-id"));
+        });
+
+        var active = {
+            //在这里给active绑定几项事件，后面可通过active调用这些事件
+            tabAdd: function (url, id, name) {
+                //新增一个Tab项 传入三个参数，分别对应其标题，tab页面的地址，还有一个规定的id，是标签中data-id的属性值
+                //关于tabAdd的方法所传入的参数可看layui的开发文档中基础方法部分
+                element.tabAdd('filter-my-tab', {
+                    title: name,
+                    content: '<iframe data-frameid="' + id + '" scrolling="auto" frameborder="0" src="' + url + '" style="width:100%;height:80%;"></iframe>',
+                    id: id //规定好的id
+                })
+                FrameWH();  //计算ifram层的大小
+            },
+            tabChange: function (id) {
+                //切换到指定Tab项
+                element.tabChange('filter-my-tab', id); //根据传入的id传入到指定的tab项
+            },
+            tabDelete: function (id) {
+                element.tabDelete("demo", id);//删除
+            }
+        };
+        function FrameWH() {
+            var h = $(window).height();
+            $("iframe").css("height",h+"px");
+        }
+    });
+</script>
+</body>
+</html>

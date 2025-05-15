@@ -1,0 +1,9 @@
+FROM debian:oldstable
+LABEL maintainer="zcq<zhangchiqian@uniontech.com>"
+LABEL version="0.1"
+LABEL description="debian with python3 python3-pip"
+RUN sed -i 's#http://deb.debian.org#http://mirrors.tuna.tsinghua.edu.cn#g' /etc/apt/sources.list && \
+    apt update && \
+    apt install -y python3 python3-pip && \
+    pip3 config set global.index-url https://mirrors.aliyun.com/pypi/simple && \
+    pip3 config set install.trusted-host mirrors.aliyun.com 

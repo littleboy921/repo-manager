@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <title>查看日志</title>
+  <!-- 引入layui.css -->
+  <link rel="stylesheet" href="layui/css/layui.css">
+  <link rel="stylesheet" href="bootstrap-icons-1.11.3/font/bootstrap-icons.css">
+  <style>
+    .layui-form-label {
+        width: 160px;
+    }
+  </style>
+</head>
+<body>
+<h2>日志文件：</h2>
+<!-- 日志文件列表渲染 -->
+<table class="layui-table" id="ID-log-file-list" lay-filter="log-file-list-filter"></table>
+<!-- 引入 layui.js -->
+<script src="layui/layui.js"></script>
+<script>
+layui.use(function(){
+    let table = layui.table;
+    let $ = layui.$;
+    // 日志文件信息列表渲染
+    var dir_content_table= table.render({
+        elem:"#ID-log-file-list",
+        id:"ID-log-file-list_render",
+        page: {
+            limit: 20, // 默认每页显示的条数
+            limits: [20, 50, 100,1000], // 自定义分页条数选项
+        },
+        pagebar: '#log-file-list-page-pagebar',
+        skin: 'line',
+        size: 'md',
+        cols:[[
+            {
+            //field:'file_name', 
+            title:'文件名',
+            width:200,
+            sort: true,
+            templet: fileLink
+            },
+            { 
+            title:'文件大小',
+            width:120,
+            templet: fileSize
+            },
+            {
+            field:'file_mtime',
+            title:'修改时间',
+            width:200,
+            sort: true  
+            },
+            {
+            title:'功能模块',
+            width:200,
+            templet: fun_module
+            }
+        ]]
+    });
+    // 从后端获取同步日志文件列表，并渲染到表格中
+    $.ajax({
+      url: '/api/repo_api/log_file_list/',
+      type: 'GET',
+      dataType: 'json',
+      success: function(res){
+        table.reloadData('ID-log-file-list_render', {
+        data: res.data,
+        scrollPos: 'fixed'
+        });
+      },
+      error: function(res){
+        layer.msg('获取同步对象列表失败,'+res.msg);
+      }
+    });
+});
+</script>
+<script>
+// 日志文件查看链接渲染
+function fileLink(d) {
+    // 日志文件名
+    var filename = d.file_name;
+    // 对日志文件名进行url编码
+    logfile_html = encodeURIComponent(filename);
+    return '<a onclick="file_view(\'file_content.html?path='+ logfile_html +'&is_logfile=1\')">'+ filename +'</a>';
+}
+// 日志下载功能
+function fun_module(d) {
+    logfile_html = encodeURIComponent(d.file_name);
+    var fun_module_html = `
+        <div class="layui-btn-group">
+            <a id="btn-download" type="button" class="layui-btn" href="/api/repo_api/download_file/?path=${logfile_html}&is_logfile=1">
+                <i class="layui-icon layui-icon-download-circle"></i>下载
+            </a>
+        </div>
+    `;
+    return fun_module_html;
+}
+
+</script>
+<!-- 文件大小格式化函数 -->
+<script>  
+    function fileSize(d) {
+        var fsize = d.file_size;
+        var funits = 'b'; 
+        if(fsize/1024>1){
+            fsize = fsize/1024;
+            funits = 'k';
+        }
+        if(fsize/1024>1){
+            fsize = fsize/1024;
+            funits = 'M';
+        }
+        if(fsize/1024>1){
+            fsize = fsize/1024;
+            funits = 'G';
+        }
+        if(funits != 'b'){
+          fsize = fsize.toFixed(2);     // 保留两位小数
+        }
+        return fsize+funits;
+    }
+</script>
+<!-- 弹出层，显示文件内容 -->
+<script type="text/javascript">
+    function file_view(url) {
+      var layer = layui.layer;
+      layer.open({
+          type: 2,
+          //width,height
+          area: ['1000px', '600px'],
+          fixed: false, //不固定
+          maxmin: true,
+          content: url
+      });
+    };
+</script>
+</body>
+</html>
