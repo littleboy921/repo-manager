@@ -1,0 +1,7 @@
+（1）docker build -t nginx-git:0.1  --network host -f Dockerfile ./
+
+（3）清除创建失败的none 镜像：
+	docker system prune
+	
+（4）导出镜像
+	docker image save nginx-git:0.1  -o ./nginx-git-v0.1.tar
