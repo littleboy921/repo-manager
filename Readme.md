@@ -1,6 +1,10 @@
-# repo-manager 使用手册
+# repo-manager
 
-## deploy & run repo-manager
+## introduction
+
+该项目实现了对linux系统的deb仓库、rpm仓库、bash脚本git仓库的界面化管理，可从web界面上传下载文件，并且可以建立级联同步关系，从中心站点自动向所有下级站点推送更新。其中，deb仓库支持basic auth认证。
+
+## deploy & run 
 
 1.  请实现在机器上安装好docker及docker-compose环境
 
