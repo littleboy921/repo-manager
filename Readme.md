@@ -1,5 +1,7 @@
 # repo-manager
 
+- Author:zhangchiqian@foxmail.com
+
 ## introduction
 
 该项目实现了对linux系统的deb仓库、rpm仓库、bash脚本git仓库的界面化管理，可从web界面上传下载文件，并且可以建立级联同步关系，从中心站点自动向所有下级站点推送更新。其中，deb仓库支持basic auth认证。
@@ -40,7 +42,7 @@
 
 6.  所有上传到仓库的资源都会放在./data-file目录下，请保证该目录所在磁盘分区有足够空间
 
-## web页面登录
+## web login
 
 地址：http://<ip_address>:8888/
 
@@ -57,7 +59,7 @@ height="2.7472222222222222in"}
 htpasswd -cb nginx-htpasswd <USER> <PASSWORD>
 ```
 
-## 上传deb包至ppa仓库
+## manage deb repo
 
 点击"deb仓库管理"，而后再点击"进入仓库管理"
 
@@ -91,3 +93,31 @@ height="1.632638888888889in"}
 
 ![](readme-images/media/image9.png){width="7.2555555555555555in"
 height="1.5895833333333333in"}
+
+## repo sync
+
+填写本级节点信息以及上级节点信息
+
+![](readme-images/media/截图_选择区域_20250521201535.jpg)点击确认，添加上级节点
+
+![](/home/zhangchiqian/Desktop/script-test/python-flask-test/repo-manager/readme-images/media/截图_选择区域_20250521201627.jpg)
+
+在父节点添加同步内容
+
+![](readme-images/media/截图_选择区域_20250521204040.jpg)
+
+![](readme-images/media/截图_选择区域_20250521204311.jpg)
+
+查看同步状态
+
+父节点：
+
+![image-20250521204737632](readme-images/media/截图_选择区域_20250521204734.jpg)
+
+子节点
+
+![image-20250521204930116](/home/zhangchiqian/.config/Typora/typora-user-images/image-20250521204930116.png)
+
+## log view
+
+![](readme-images/media/截图_选择区域_20250521205137.jpg)
