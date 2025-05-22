@@ -116,7 +116,7 @@ height="1.5895833333333333in"}
 
 子节点
 
-![image-20250521204930116](/home/zhangchiqian/.config/Typora/typora-user-images/image-20250521204930116.png)
+![image-20250521204930116](readme-images/media/截图_选择区域_20250521204927.jpg)
 
 ## log view
 
