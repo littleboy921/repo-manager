@@ -44,7 +44,11 @@ services:
         - $run_path/config-file/access-control:/etc/nginx/access-control
         - /etc/localtime:/etc/localtime:ro
       restart: always
-      network_mode: host
+      networks:
+        - repo-manager-net
+      ports: 
+        - 8000:80
+        - 8888:8888
 
     py-apt-deb:
       container_name: py3-apt-dnf-gunicorn-1
@@ -56,7 +60,10 @@ services:
         - /etc/localtime:/etc/localtime:ro
       restart: always
       working_dir: /mydata/config-file/py-files
-      network_mode: host
+      networks:
+        - repo-manager-net
+networks:
+    repo-manager-net: {}  
 EOF
 }
 
@@ -83,7 +90,7 @@ start)
   gen_dir
 	# Restart docker-compose
 	[ -f ${compose_file} ] && docker-compose -f ${compose_file} -p ${project_name} down
-  	generate_id_file
+  generate_id_file
 	generate_compose_yml
 	docker-compose  -f ${compose_file} -p ${project_name} up -d
 	echo -e "\033[46;30m Start repo server Success! \033[0m"
