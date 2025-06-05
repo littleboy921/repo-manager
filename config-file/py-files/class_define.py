@@ -241,7 +241,7 @@ class DebUpdateInfo(repo_update_info_Base):
     deb_name = Column(String(128),nullable=False)   
     update_conf_name=Column(String(64),nullable=False)
     file_rel_path= Column(String(256),nullable=False)
-    updated_time=last_update_time=Column(DateTime,nullable=True)
+    updated_time=Column(String(64),nullable=True)
 
 if __name__ == '__main__':
     # checkfirst=True，默认值为True，表示创建表前先检查该表是否存在，如同名表已存在则不再创建。其实默认就是True

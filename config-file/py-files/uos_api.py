@@ -1,6 +1,7 @@
 from flask import Flask,request,render_template,jsonify,Blueprint,current_app
 from sqlalchemy import Boolean,Column,Integer,String, DateTime,Boolean,and_,or_,func
 from sqlalchemy.dialects.sqlite import JSON
+from sqlalchemy.orm import declarative_base
 from typing import List, Tuple, Dict
 
 from db_config import uos_api_Base,task_info_Base,uos_api_db,task_info_db,uos_api_engine,task_info_engine
@@ -51,7 +52,7 @@ class udcp_pc_change_record(uos_api_Base):
     action = Column(String(16),nullable=False)
 
 # 定义task_info_list表结构，用于存放历史任务名称信息
-class task_info_list(task_info_Base):
+class task_info_list(uos_api_Base):
     # 类对象对应表
     __tablename__='task_info_list'
     id = Column(Integer,primary_key=True,index=True, autoincrement=True)
@@ -71,12 +72,15 @@ def mapping_for_json(json_cls_schema):
     clsdict.update(
         {
             rec["name"]: Column(
-                _type_lookup[rec["type"]], primary_key=rec.get("is_pk", False),autoincrement=rec.get("is_autoincre", False),index=rec.get("is_index", False)
+                _type_lookup[rec["type"]],
+                primary_key=rec.get("is_pk", False),
+                autoincrement=rec.get("is_autoincre", False),
+                index=rec.get("is_index", False)
             )
             for rec in json_cls_schema["columns"]
         }
     )
-    return type(json_cls_schema["clsname"], (Base,), clsdict)
+    return type(json_cls_schema["clsname"], (task_info_Base,), clsdict)
 
 
 # 判断当前终端是否在线
@@ -491,7 +495,7 @@ def get_user_logon_script_api():
 # 获取task info list 数据
 @uos_api.route('/get_task_info_list/',methods = ['GET'])
 def get_task_info_list():
-    task_info_list_search_results=task_info_db.query(task_info_list).all()
+    task_info_list_search_results=uos_api_db.query(task_info_list).all()
     # 形成返回值列表
     result_list=[]
     for task_info_list_search_result in task_info_list_search_results:
@@ -512,10 +516,10 @@ def add_task_info():
 
     # 先查询uos_api_db中任务信息列表中是否已存在该任务名
     task_info_list_search_results=uos_api_db.query(task_info_list).filter(task_info_list.task_name == task_name).all()
+    now_time = datetime.datetime.now()
     if task_info_list_search_results == []:
         # 若不存在，则创建该任务名对应的记录
         # 定义任务信息记录实例
-        now_time = datetime.datetime.now()
         task_info_rec = task_info_list(
             task_name = task_name,
             create_at = now_time,
@@ -526,7 +530,7 @@ def add_task_info():
     else:
         # 若存在，则更新该任务名对应的记录
         for task_info_list_search_result in task_info_list_search_results:
-            task_info_list_search_result.last_update = datetime.datetime.now()
+            task_info_list_search_result.last_update = now_time
             task_info_list_search_result.total_rec_num += 1
     try:
         uos_api_db.commit()  
@@ -545,6 +549,7 @@ def add_task_info():
         'machine_id': post_data.get('machine_id'),
         'data': post_data.get('data') 
     }
+    rec['update_time']=now_time
     # 定义表格名称、字段信息
     json_cls_schema = {
         "clsname": task_name,
@@ -553,7 +558,8 @@ def add_task_info():
             {"name": "id", "type": "integer", "is_pk": True,"is_autoincre": True},
             {"name": "pc_name", "type": "string",},
             {"name": "machine_id", "type": "integer",},
-            {"name": "data", "type": "json"}
+            {"name": "data", "type": "json"},
+            {"name": "update_time", "type": "datetime"}
         ],
     }
 
@@ -583,7 +589,8 @@ def get_task_info():
             {"name": "id", "type": "integer", "is_pk": True,"is_autoincre": True},
             {"name": "pc_name", "type": "string",},
             {"name": "machine_id", "type": "integer",},
-            {"name": "data", "type": "json"}
+            {"name": "data", "type": "json"},
+            {"name": "update_time", "type": "datetime"}            
         ],
     }
     # 定义和任务名称对应的表结构类
@@ -595,6 +602,7 @@ def get_task_info():
         result_info={
             'pc_name': task_info_search_result.pc_name,
            'machine_id': task_info_search_result.machine_id,
+           'update_time': task_info_search_result.update_time.strftime("%Y-%m-%d %H:%M:%S"),
             'data': task_info_search_result.data
         }
         result_list.append(result_info)
@@ -626,7 +634,8 @@ def del_task_info():
             {"name": "id", "type": "integer", "is_pk": True,"is_autoincre": True},
             {"name": "pc_name", "type": "string"},
             {"name": "machine_id", "type": "integer"},
-            {"name": "data", "type": "json"}
+            {"name": "data", "type": "json"},
+            {"name": "update_time", "type": "datetime"}
         ],
     }
     # 定义和任务名称对应的表结构类

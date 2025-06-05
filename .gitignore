@@ -1,5 +1,7 @@
 *.log
 /data-file
-**/__pycache__
+__pycache__/
 **/crts_keys/*
 /config-file/py-files/databases/*
+id.txt
+*.db

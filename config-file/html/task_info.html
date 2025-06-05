@@ -116,14 +116,26 @@
         var new_cols_1 = [{
           title:'pc_name',
           width:150,
-          field:'pc_name'
+          field:'pc_name',
+          sort:true
+        },{
+          title:'machine_id',
+          width:150,
+          field:'machine_id',
+        },{
+          title:'update_time',
+          width:150,
+          field:'update_time',
+          sort:true          
         }];
         // 遍历原始data数据，构造新数据
         var len = res.data.length
         for(var i = 0; i < len; i++) {
           // 处理每行数据
           var new_row = {
-            "pc_name": res.data[i].pc_name
+            "pc_name": res.data[i].pc_name,
+            "machine_id": res.data[i].machine_id,
+            "update_time": res.data[i].update_time
           }
           // 将data字典中的键值对添加到new_row中
           for(let key in res.data[i].data ) {

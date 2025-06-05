@@ -22,7 +22,7 @@ app.register_blueprint(sync_repo_api,url_prefix='/api/sync_repo_api')
 app.register_blueprint(remote_api,url_prefix='/remote')
 app.wsgi_app = ProxyFix(app.wsgi_app)
 app.json.ensure_ascii = False  #解决return jsonify中文乱码问题
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 formatter = logging.Formatter("[%(asctime)s][%(filename)s:%(lineno)d][%(levelname)s][%(thread)d] - %(message)s")
 file_handler = TimedRotatingFileHandler(filename=log_file_path, when='midnight',interval=1, backupCount=14,encoding='utf-8')
 file_handler.setLevel(logging.INFO)

@@ -75,6 +75,8 @@ def deb_repo_update(rela_path:str,codename:str)->Tuple[int,str]:
             for line in file_r:
                 # 处理每一行（自动去除行尾换行符 \n）
                 processed_line = line.strip()
+                if len(processed_line) == 0:
+                    continue
                 match = re.search(r"^Updates needed for\s+'(\S+)'",processed_line)
                 if match:
                     match_str=match.group(1)
@@ -91,7 +93,7 @@ def deb_repo_update(rela_path:str,codename:str)->Tuple[int,str]:
                 match = re.search(r"files needed: (\S+)",processed_line)
                 if match:
                     file_rel_path=match.group(1)
-                    deb_update_obj=repo_update_info_db.query(DebUpdateInfo).filter(and_(DebUpdateInfo.))
+                    #deb_update_obj=repo_update_info_db.query(DebUpdateInfo).filter(and_(DebUpdateInfo.))
                     repo_update_info_db.add(DebUpdateInfo(
                         codename=codename,
                         component=component,
