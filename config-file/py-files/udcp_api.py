@@ -19,8 +19,13 @@ udcp_api_url="udcp-openapi.test.com"
 
 #初始化https连接
 ssl_ctx = ssl.SSLContext()
-ssl_ctx.load_cert_chain(certfile, keyfile)
-ssl_ctx.load_verify_locations(cafile)
+try:
+    ssl_ctx.load_cert_chain(certfile, keyfile)
+    ssl_ctx.load_verify_locations(cafile)
+except:
+    print("加载证书失败")
+else:
+    print("加载证书成功")
 conn = http.client.HTTPSConnection(udcp_api_url, context = ssl_ctx)
 
 #获取部门信息
