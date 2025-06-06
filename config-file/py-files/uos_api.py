@@ -59,7 +59,6 @@ class task_info_list(uos_api_Base):
     task_name = Column(String(64),unique=True,nullable=False)
     create_at = Column(DateTime,nullable=False)
     last_update = Column(DateTime,nullable=False)
-    total_rec_num = Column(Integer,nullable=False)
 
 uos_api_Base.metadata.create_all(uos_api_engine, checkfirst=True)
 task_info_Base.metadata.create_all(task_info_engine, checkfirst=True)
@@ -499,11 +498,27 @@ def get_task_info_list():
     # 形成返回值列表
     result_list=[]
     for task_info_list_search_result in task_info_list_search_results:
+        task_name=task_info_list_search_result.task_name
+        # 定义表格名称、字段信息
+        json_cls_schema = {
+            "clsname": task_name,
+            "tablename": task_name,
+            "columns": [
+                {"name": "id", "type": "integer", "is_pk": True,"is_autoincre": True},
+                {"name": "pc_name", "type": "string",},
+                {"name": "machine_id", "type": "integer",},
+                {"name": "data", "type": "json"},
+                {"name": "update_time", "type": "datetime"}            
+            ],
+        }
+        # 定义和任务名称对应的表结构类
+        task_info_class = mapping_for_json(json_cls_schema)  
+        total_rec_num=task_info_db.query(task_info_class).all().count()      
         result_info={
             'task_name': task_info_list_search_result.task_name,
             'create_at': task_info_list_search_result.create_at.strftime("%Y-%m-%d %H:%M:%S"),
             'last_update': task_info_list_search_result.last_update.strftime("%Y-%m-%d %H:%M:%S"),
-            'total_rec_num': task_info_list_search_result.total_rec_num
+            'total_rec_num': total_rec_num
         }
         result_list.append(result_info)
     return jsonify({"code": 0, "msg": "","count": len(result_list),"data": result_list})
@@ -523,15 +538,13 @@ def add_task_info():
         task_info_rec = task_info_list(
             task_name = task_name,
             create_at = now_time,
-            last_update = now_time,
-            total_rec_num = 1
+            last_update = now_time
         )
         uos_api_db.add(task_info_rec)
     else:
         # 若存在，则更新该任务名对应的记录
         for task_info_list_search_result in task_info_list_search_results:
             task_info_list_search_result.last_update = now_time
-            task_info_list_search_result.total_rec_num += 1
     try:
         uos_api_db.commit()  
     except Exception as e:
