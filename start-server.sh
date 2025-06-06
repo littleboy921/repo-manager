@@ -50,7 +50,7 @@ services:
         - 8000:80
         - 8888:8888
 
-    py-apt-deb:
+    py-apt-dnf:
       container_name: py3-apt-dnf-gunicorn-1
       image: py3-apt-dnf-gunicorn:1.0
       user: "$UID:$UID"

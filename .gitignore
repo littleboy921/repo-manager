@@ -5,3 +5,4 @@ __pycache__/
 /config-file/py-files/databases/*
 id.txt
 *.db
+docker-compose.yml
