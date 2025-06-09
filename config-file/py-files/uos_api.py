@@ -513,7 +513,8 @@ def get_task_info_list():
         }
         # 定义和任务名称对应的表结构类
         task_info_class = mapping_for_json(json_cls_schema)  
-        total_rec_num=task_info_db.query(task_info_class).all().count()      
+        # 统计该任务名称对应的表中记录数
+        total_rec_num=task_info_db.query(func.count(task_info_class.id)).scalar()    
         result_info={
             'task_name': task_info_list_search_result.task_name,
             'create_at': task_info_list_search_result.create_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -608,7 +609,7 @@ def get_task_info():
     }
     # 定义和任务名称对应的表结构类
     task_info_class = mapping_for_json(json_cls_schema)    
-    task_info_search_results=task_info_db.query(task_info_class).all()
+    task_info_search_results=task_info_db.query(func.count(task_info_class.id)).scalar()
     # 形成返回值列表
     result_list=[]
     for task_info_search_result in task_info_search_results:
